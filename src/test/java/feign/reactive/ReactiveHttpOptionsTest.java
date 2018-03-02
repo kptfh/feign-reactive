@@ -1,12 +1,10 @@
 package feign.reactive;
 
-import feign.Logger;
 import feign.ReactiveFeign;
 import feign.Request;
 import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamController;
 import feign.reactive.testcase.IcecreamServiceApi;
-import feign.slf4j.Slf4jLogger;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,8 +63,6 @@ public class ReactiveHttpOptionsTest {
             .options(options)
             //encodes body and parameters
             .encoder(new JacksonEncoder(TestUtils.MAPPER))
-            .logger(new Slf4jLogger())
-            .logLevel(Logger.Level.FULL)
             .target(IcecreamServiceApi.class, targetUrl);
 
     testClient(client);
@@ -89,8 +85,6 @@ public class ReactiveHttpOptionsTest {
               .options(options)
               //encodes body and parameters
               .encoder(new JacksonEncoder(TestUtils.MAPPER))
-              .logger(new Slf4jLogger())
-              .logLevel(Logger.Level.FULL)
               .target(IcecreamServiceApi.class, targetUrl);
 
     testClient(client);

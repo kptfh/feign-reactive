@@ -9,7 +9,6 @@ import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamServiceApi;
 import feign.reactive.testcase.domain.IceCreamOrder;
 import feign.reactive.testcase.domain.OrderGenerator;
-import feign.slf4j.Slf4jLogger;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -37,8 +36,6 @@ public class RetryingTest {
             //encodes body and parameters
             .encoder(new JacksonEncoder(TestUtils.MAPPER))
             .retryer(new ReactiveRetryer.Default())
-            .logger(new Slf4jLogger())
-            .logLevel(Logger.Level.FULL)
             .target(IcecreamServiceApi.class, "http://localhost:8089");
 
     @Test

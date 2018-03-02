@@ -83,12 +83,10 @@ public class ReactiveFeign extends Feign {
     public static final class Builder extends Feign.Builder {
         private final List<RequestInterceptor> requestInterceptors =
                 new ArrayList<>();
-        private Logger.Level logLevel = Logger.Level.NONE;
         private Contract contract =
                 new ReactiveDelegatingContract(new Contract.Default());
         private WebClient webClient;
         private ReactiveRetryer retryer = new ReactiveRetryer.Default();
-        private Logger logger = new Logger.NoOpLogger();
         private Encoder encoder = new Encoder.Default();
         private ErrorDecoder errorDecoder = new ErrorDecoder.Default();
         private InvocationHandlerFactory invocationHandlerFactory =
@@ -122,8 +120,19 @@ public class ReactiveFeign extends Feign {
          */
         @Override
         public Builder logLevel(final Logger.Level logLevel) {
-            this.logLevel = logLevel;
-            return this;
+            throw new UnsupportedOperationException("Don't need it anymore");
+        }
+
+        /**
+         * Sets logger.
+         *
+         * @param logger logger
+         *
+         * @return this builder
+         */
+        @Override
+        public Builder logger(final Logger logger) {
+            throw new UnsupportedOperationException("Don't need it anymore, slf4j used instead");
         }
 
         /**
@@ -154,19 +163,6 @@ public class ReactiveFeign extends Feign {
 
         public Builder retryer(final ReactiveRetryer retryer) {
             this.retryer = retryer;
-            return this;
-        }
-
-        /**
-         * Sets logger.
-         *
-         * @param logger logger
-         *
-         * @return this builder
-         */
-        @Override
-        public Builder logger(final Logger logger) {
-            this.logger = logger;
             return this;
         }
 
@@ -312,7 +308,7 @@ public class ReactiveFeign extends Feign {
 
             final ReactiveMethodHandler.Factory methodHandlerFactory =
                     new ReactiveMethodHandler.Factory(webClient, retryer,
-                            requestInterceptors, logger, logLevel, decode404);
+                            requestInterceptors, new feign.reactive.Logger(), decode404);
             final ParseHandlersByName handlersByName = new ParseHandlersByName(
                     contract, encoder, errorDecoder,
                     methodHandlerFactory);

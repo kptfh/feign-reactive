@@ -9,7 +9,6 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -26,7 +25,6 @@ import java.util.stream.Collectors;
 import static feign.Util.checkNotNull;
 import static feign.Util.resolveLastTypeParameter;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static reactor.core.publisher.Mono.just;
 
 /**
  * Method handler for asynchronous HTTP requests via {@link WebClient}.
@@ -34,18 +32,18 @@ import static reactor.core.publisher.Mono.just;
  *
  * @author Sergii Karpenko
  */
-class ReactiveMethodHandler
+public class ReactiveMethodHandler
         implements MethodHandler {
 
     private final MethodMetadata metadata;
+    private final String methodTag;
     private final Type returnPublisherType;
     private final ParameterizedTypeReference<?> returnActualType;
     private final Target<?> target;
     private final WebClient client;
     private final ReactiveRetryer retryer;
     private final List<RequestInterceptor> requestInterceptors;
-    private final Logger logger;
-    private final Logger.Level logLevel;
+    private final feign.reactive.Logger logger;
     private final Function<Object[], RequestTemplate> buildTemplateFromArgs;
     private final ErrorDecoder errorDecoder;
     private final boolean decode404;
@@ -55,8 +53,7 @@ class ReactiveMethodHandler
             WebClient client,
             ReactiveRetryer retryer,
             List<RequestInterceptor> requestInterceptors,
-            Logger logger,
-            Logger.Level logLevel,
+            feign.reactive.Logger logger,
             MethodMetadata metadata,
             Function<Object[], RequestTemplate> buildTemplateFromArgs,
             ErrorDecoder errorDecoder,
@@ -68,8 +65,6 @@ class ReactiveMethodHandler
                 "requestInterceptors for %s must be not null", target);
         this.logger = checkNotNull(logger,
                 "logger for %s must be not null", target);
-        this.logLevel = checkNotNull(logLevel,
-                "logLevel for %s must be not null", target);
         this.metadata = checkNotNull(metadata,
                 "metadata for %s must be not null", target);
         this.buildTemplateFromArgs = checkNotNull(buildTemplateFromArgs,
@@ -77,6 +72,8 @@ class ReactiveMethodHandler
         this.errorDecoder = checkNotNull(errorDecoder,
                 "errorDecoder for %s must be not null", target);
         this.decode404 = decode404;
+
+        this.methodTag = metadata.configKey().substring(0, metadata.configKey().indexOf('('));
 
         final Type returnType = metadata.returnType();
         returnPublisherType = ((ParameterizedType) returnType).getRawType();
@@ -100,8 +97,9 @@ class ReactiveMethodHandler
      */
     private Publisher executeAndDecode(final RequestTemplate template) {
         final Request request = targetRequest(template);
-        logRequest(request);
+        logger.logRequest(methodTag, request);
 
+        long start = System.currentTimeMillis();
         WebClient.ResponseSpec response = client.method(HttpMethod.resolve(request.method()))
                 .uri(request.url())
                 .headers(httpHeaders -> request.headers().forEach(
@@ -111,29 +109,48 @@ class ReactiveMethodHandler
                 .onStatus( httpStatus -> decode404 && httpStatus == NOT_FOUND,
                         clientResponse -> null)
                 .onStatus(HttpStatus::isError,
-                        clientResponse -> just(errorDecoder.decode(metadata.configKey(),
-                                Response.create(
-                                        clientResponse.statusCode().value(),
-                                        clientResponse.statusCode().getReasonPhrase(),
-                                        clientResponse.headers().asHttpHeaders().entrySet().stream()
-                                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                                        extractBodyContent(clientResponse)))));
+                        clientResponse -> clientResponse.bodyToMono(ByteArrayResource.class)
+                                .map(ByteArrayResource::getByteArray)
+                                .defaultIfEmpty(new byte[0])
+                                .map(bodyData -> errorDecoder.decode(metadata.configKey(),
+                                        Response.create(
+                                                clientResponse.statusCode().value(),
+                                                clientResponse.statusCode().getReasonPhrase(),
+                                                clientResponse.headers().asHttpHeaders().entrySet().stream()
+                                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                                                bodyData)))
+
+                                )
+                .onStatus(httpStatus -> true, clientResponse -> {
+                    logger.logResponseHeaders(methodTag, clientResponse.headers().asHttpHeaders());
+                    return null;
+                });
 
         if (returnPublisherType == Mono.class){
-            return response.bodyToMono(returnActualType).retryWhen(whenFactory());
+            return response.bodyToMono(returnActualType)
+                    .retryWhen(whenFactory())
+                    .map(result -> {
+                        logger.logResponse(methodTag, result, System.currentTimeMillis() - start);
+                        return result;
+                    });
 
         } else {
-            return response.bodyToFlux(returnActualType).retryWhen(whenFactory());
+            return response.bodyToFlux(returnActualType)
+                    .retryWhen(whenFactory())
+                    .map(result -> {
+                        logger.logResponse(methodTag, result, System.currentTimeMillis() - start);
+                        return result;
+                    });
         }
     }
 
     protected Function<Flux<Throwable>, Publisher<?>> whenFactory() {
         final ReactiveRetryer retryerFinal = retryer.clone();
-        return companion ->
-                companion.flatMap(error -> {
+        return companion -> companion.flatMap(
+                error -> {
                     long delay = retryerFinal.doRetryIn(error);
                     if(delay >= 0){
-                        logRetry();
+                        logger.logRetry(methodTag);
                         return Mono.delay(Duration.ofMillis(delay));
                     } else {
                         throw Exceptions.propagate(error);
@@ -155,57 +172,24 @@ class ReactiveMethodHandler
         return target.apply(new RequestTemplate(template));
     }
 
-    /**
-     * Logs request.
-     *
-     * @param request HTTP request
-     */
-    private void logRequest(final Request request) {
-        if (logLevel != Logger.Level.NONE) {
-            logger.logRequest(metadata.configKey(), logLevel, request);
-        }
-    }
-
-    /**
-     * Logs retry.
-     */
-    private void logRetry() {
-        if (logLevel != Logger.Level.NONE) {
-            logger.logRetry(metadata.configKey(), logLevel);
-        }
-    }
-
-    private static byte[] extractBodyContent(ClientResponse clientResponse) {
-        try {
-            return clientResponse.bodyToMono(ByteArrayResource.class)
-                    .blockOptional(Duration.ZERO)
-                    .map(ByteArrayResource::getByteArray).orElse(null);
-        } catch (Throwable e){
-            return null;
-        }
-    }
-
     static class Factory {
         private final WebClient client;
         private final ReactiveRetryer retryer;
         private final List<RequestInterceptor> requestInterceptors;
-        private final Logger logger;
-        private final Logger.Level logLevel;
+        private final feign.reactive.Logger logger;
         private final boolean decode404;
 
         Factory(
                 final WebClient client,
                 final ReactiveRetryer retryer,
                 final List<RequestInterceptor> requestInterceptors,
-                final Logger logger,
-                final Logger.Level logLevel,
+                final feign.reactive.Logger logger,
                 final boolean decode404) {
             this.client = checkNotNull(client, "client must not be null");
             this.retryer = checkNotNull(retryer, "retryer must not be null");
             this.requestInterceptors = checkNotNull(requestInterceptors,
                     "requestInterceptors must not be null");
             this.logger = checkNotNull(logger, "logger must not be null");
-            this.logLevel = checkNotNull(logLevel, "logLevel must not be null");
             this.decode404 = decode404;
         }
 
@@ -220,7 +204,6 @@ class ReactiveMethodHandler
                     retryer,
                     requestInterceptors,
                     logger,
-                    logLevel,
                     metadata,
                     buildTemplateFromArgs,
                     errorDecoder,

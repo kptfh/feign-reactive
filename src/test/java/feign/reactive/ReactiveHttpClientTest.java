@@ -1,13 +1,11 @@
 package feign.reactive;
 
-import feign.Logger;
 import feign.ReactiveFeign;
 import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamController;
 import feign.reactive.testcase.IcecreamServiceApi;
 import feign.reactive.testcase.IcecreamServiceApiBroken;
 import feign.reactive.testcase.domain.*;
-import feign.slf4j.Slf4jLogger;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,8 +55,6 @@ public class ReactiveHttpClientTest {
                 .webClient(webClient)
                 //encodes body and parameters
                 .encoder(new JacksonEncoder(TestUtils.MAPPER))
-                .logger(new Slf4jLogger())
-                .logLevel(Logger.Level.FULL)
                 .target(IcecreamServiceApi.class, targetUrl);
     }
 
