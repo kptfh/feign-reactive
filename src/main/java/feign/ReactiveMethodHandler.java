@@ -2,7 +2,6 @@ package feign;
 
 import feign.InvocationHandlerFactory.MethodHandler;
 import feign.codec.ErrorDecoder;
-import feign.reactive.ReactiveRetryer;
 import org.reactivestreams.Publisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
@@ -10,13 +9,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.Exceptions;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -41,7 +37,6 @@ public class ReactiveMethodHandler
     private final ParameterizedTypeReference<?> returnActualType;
     private final Target<?> target;
     private final WebClient client;
-    private final ReactiveRetryer retryer;
     private final List<RequestInterceptor> requestInterceptors;
     private final feign.reactive.Logger logger;
     private final Function<Object[], RequestTemplate> buildTemplateFromArgs;
@@ -51,7 +46,6 @@ public class ReactiveMethodHandler
     private ReactiveMethodHandler(
             Target<?> target,
             WebClient client,
-            ReactiveRetryer retryer,
             List<RequestInterceptor> requestInterceptors,
             feign.reactive.Logger logger,
             MethodMetadata metadata,
@@ -60,7 +54,6 @@ public class ReactiveMethodHandler
             boolean decode404) {
         this.target = checkNotNull(target, "target must be not null");
         this.client = checkNotNull(client, "client must be not null");
-        this.retryer = checkNotNull(retryer, "retryer for %s must be not null", target);;
         this.requestInterceptors = checkNotNull(requestInterceptors,
                 "requestInterceptors for %s must be not null", target);
         this.logger = checkNotNull(logger,
@@ -84,19 +77,11 @@ public class ReactiveMethodHandler
     @Override
     @SuppressWarnings("unchecked")
     public Publisher invoke(final Object[] argv) throws Throwable {
-        final RequestTemplate template = buildTemplateFromArgs.apply(argv);
-        return executeAndDecode(template);
-    }
 
-    /**
-     * Executes request from {@code template} with {@code this.client} and
-     * decodes the response. Result or occurred error wrapped in returned Future.
-     *
-     * @param template request template
-     * @return future with decoded result or occurred error
-     */
-    private Publisher executeAndDecode(final RequestTemplate template) {
+        final RequestTemplate template = buildTemplateFromArgs.apply(argv);
+
         final Request request = targetRequest(template);
+
         logger.logRequest(methodTag, request);
 
         long start = System.currentTimeMillis();
@@ -120,7 +105,7 @@ public class ReactiveMethodHandler
                                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                                                 bodyData)))
 
-                                )
+                )
                 .onStatus(httpStatus -> true, clientResponse -> {
                     logger.logResponseHeaders(methodTag, clientResponse.headers().asHttpHeaders());
                     return null;
@@ -128,7 +113,6 @@ public class ReactiveMethodHandler
 
         if (returnPublisherType == Mono.class){
             return response.bodyToMono(returnActualType)
-                    .retryWhen(whenFactory())
                     .map(result -> {
                         logger.logResponse(methodTag, result, System.currentTimeMillis() - start);
                         return result;
@@ -136,7 +120,6 @@ public class ReactiveMethodHandler
 
         } else {
             return response.bodyToFlux(returnActualType)
-                    .retryWhen(whenFactory())
                     .map(result -> {
                         logger.logResponse(methodTag, result, System.currentTimeMillis() - start);
                         return result;
@@ -144,19 +127,6 @@ public class ReactiveMethodHandler
         }
     }
 
-    protected Function<Flux<Throwable>, Publisher<?>> whenFactory() {
-        final ReactiveRetryer retryerFinal = retryer.clone();
-        return companion -> companion.flatMap(
-                error -> {
-                    long delay = retryerFinal.doRetryIn(error);
-                    if(delay >= 0){
-                        logger.logRetry(methodTag);
-                        return Mono.delay(Duration.ofMillis(delay));
-                    } else {
-                        throw Exceptions.propagate(error);
-                    }
-                });
-    }
 
     /**
      * Associates request to defined target.
@@ -174,19 +144,16 @@ public class ReactiveMethodHandler
 
     static class Factory {
         private final WebClient client;
-        private final ReactiveRetryer retryer;
         private final List<RequestInterceptor> requestInterceptors;
         private final feign.reactive.Logger logger;
         private final boolean decode404;
 
         Factory(
                 final WebClient client,
-                final ReactiveRetryer retryer,
                 final List<RequestInterceptor> requestInterceptors,
                 final feign.reactive.Logger logger,
                 final boolean decode404) {
             this.client = checkNotNull(client, "client must not be null");
-            this.retryer = checkNotNull(retryer, "retryer must not be null");
             this.requestInterceptors = checkNotNull(requestInterceptors,
                     "requestInterceptors must not be null");
             this.logger = checkNotNull(logger, "logger must not be null");
@@ -201,7 +168,6 @@ public class ReactiveMethodHandler
             return new ReactiveMethodHandler(
                     target,
                     client,
-                    retryer,
                     requestInterceptors,
                     logger,
                     metadata,

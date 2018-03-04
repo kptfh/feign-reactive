@@ -86,7 +86,6 @@ public class ReactiveFeign extends Feign {
         private Contract contract =
                 new ReactiveDelegatingContract(new Contract.Default());
         private WebClient webClient;
-        private ReactiveRetryer retryer = new ReactiveRetryer.Default();
         private Encoder encoder = new Encoder.Default();
         private ErrorDecoder errorDecoder = new ErrorDecoder.Default();
         private InvocationHandlerFactory invocationHandlerFactory =
@@ -159,11 +158,6 @@ public class ReactiveFeign extends Feign {
         @Override
         public Builder retryer(final Retryer retryer) {
             throw new UnsupportedOperationException("Feign Retryer can't be used due to it's blocking nature");
-        }
-
-        public Builder retryer(final ReactiveRetryer retryer) {
-            this.retryer = retryer;
-            return this;
         }
 
         /**
@@ -307,7 +301,7 @@ public class ReactiveFeign extends Feign {
                     "WebClient instance wasn't provided in ReactiveFeign builder");
 
             final ReactiveMethodHandler.Factory methodHandlerFactory =
-                    new ReactiveMethodHandler.Factory(webClient, retryer,
+                    new ReactiveMethodHandler.Factory(webClient,
                             requestInterceptors, new feign.reactive.Logger(), decode404);
             final ParseHandlersByName handlersByName = new ParseHandlersByName(
                     contract, encoder, errorDecoder,

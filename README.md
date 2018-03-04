@@ -54,8 +54,8 @@ client = ReactiveFeign
     .target(IcecreamServiceApi.class, "http://www.icecreame.com")
 
 /* Execute requests asynchronously */
-Flux<Flavor> flavorsFuture = icecreamApi.getAvailableFlavors();
-Flux<Mixin> mixinsFuture = icecreamApi.getAvailableMixins();
+Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();
+Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 ```
 
 ## Maven

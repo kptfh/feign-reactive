@@ -3,7 +3,6 @@ package feign.reactive;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import feign.FeignException;
-import feign.Logger;
 import feign.ReactiveFeign;
 import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamServiceApi;
@@ -30,12 +29,11 @@ public class RetryingTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     private static WebClient webClient = WebClient.create();
-    private static IcecreamServiceApi clientWithRetry = ReactiveFeign
+    private static IcecreamServiceApi client = ReactiveFeign
             .builder()
             .webClient(webClient)
             //encodes body and parameters
             .encoder(new JacksonEncoder(TestUtils.MAPPER))
-            .retryer(new ReactiveRetryer.Default())
             .target(IcecreamServiceApi.class, "http://localhost:8089");
 
     @Test
@@ -75,7 +73,9 @@ public class RetryingTest {
                         .withBody(orderStr)));
 
         /* When */
-        IceCreamOrder order = clientWithRetry.findOrder(1).block();
+        IceCreamOrder order = client.findOrder(1)
+                .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
+                .block();
 
         assertThat(order)
                 .isEqualToComparingFieldByFieldRecursively(orderGenerated);
@@ -96,7 +96,9 @@ public class RetryingTest {
                         .withHeader("Retry-After", "1")));
 
         /* When */
-        clientWithRetry.findOrder(1).block();
+        client.findOrder(1)
+                .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
+                .block();
     }
 
 }

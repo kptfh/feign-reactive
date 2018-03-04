@@ -75,7 +75,7 @@ final class ReactiveInvocationHandler implements InvocationHandler {
    *
    * @param method invoked method
    *
-   * @return true if method must return Future, false if not
+   * @return true if method returns {@link Mono} or {@link Flux}, false if not
    */
   private boolean isReturnsMonoOrFlux(final Method method) {
     return Mono.class.isAssignableFrom(method.getReturnType())
