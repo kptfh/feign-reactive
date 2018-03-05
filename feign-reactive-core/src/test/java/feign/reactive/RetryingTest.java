@@ -28,10 +28,9 @@ public class RetryingTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    private static WebClient webClient = WebClient.create();
     private static IcecreamServiceApi client = ReactiveFeign
             .builder()
-            .webClient(webClient)
+            .webClient(WebClient.create())
             //encodes body and parameters
             .encoder(new JacksonEncoder(TestUtils.MAPPER))
             .target(IcecreamServiceApi.class, "http://localhost:8089");

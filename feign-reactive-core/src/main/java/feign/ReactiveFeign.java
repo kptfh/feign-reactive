@@ -1,13 +1,14 @@
 package feign;
 
-import static feign.Util.checkNotNull;
-import static feign.Util.isDefault;
-
 import feign.InvocationHandlerFactory.MethodHandler;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
-import feign.reactive.*;
+import feign.reactive.BuildTemplateByResolvingArgs;
+import feign.reactive.ReactiveDelegatingContract;
+import feign.reactive.ReactiveOptions;
+import feign.reactive.client.ReactiveClientFactory;
+import feign.reactive.client.WebReactiveClient;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -18,12 +19,11 @@ import reactor.core.publisher.Mono;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static feign.Util.checkNotNull;
+import static feign.Util.isDefault;
 
 /**
  * Allows Feign interfaces to return reactive {@link Mono} or {@link Flux}.
@@ -34,7 +34,7 @@ public class ReactiveFeign extends Feign {
     private final ParseHandlersByName targetToHandlersByName;
     private final InvocationHandlerFactory factory;
 
-    private ReactiveFeign(
+    protected ReactiveFeign(
             final ParseHandlersByName targetToHandlersByName,
             final InvocationHandlerFactory factory) {
         this.targetToHandlersByName = targetToHandlersByName;
@@ -80,7 +80,7 @@ public class ReactiveFeign extends Feign {
     /**
      * ReactiveFeign builder.
      */
-    public static final class Builder extends Feign.Builder {
+    public static class Builder extends Feign.Builder {
         private final List<RequestInterceptor> requestInterceptors =
                 new ArrayList<>();
         private Contract contract =
@@ -91,6 +91,8 @@ public class ReactiveFeign extends Feign {
         private InvocationHandlerFactory invocationHandlerFactory =
                 new ReactiveInvocationHandler.Factory();
         private boolean decode404;
+
+        private feign.reactive.Logger logger = new feign.reactive.Logger();
 
         /** Unsupported operation. */
         @Override
@@ -300,30 +302,33 @@ public class ReactiveFeign extends Feign {
             checkNotNull(this.webClient,
                     "WebClient instance wasn't provided in ReactiveFeign builder");
 
-            final ReactiveMethodHandler.Factory methodHandlerFactory =
-                    new ReactiveMethodHandler.Factory(webClient,
-                            requestInterceptors, new feign.reactive.Logger(), decode404);
+
+
             final ParseHandlersByName handlersByName = new ParseHandlersByName(
-                    contract, encoder, errorDecoder,
-                    methodHandlerFactory);
+                    contract, encoder,
+                    new ReactiveMethodHandler.Factory(
+                            buildReactiveClientFactory(),
+                            requestInterceptors));
             return new ReactiveFeign(handlersByName, invocationHandlerFactory);
         }
+
+        protected ReactiveClientFactory buildReactiveClientFactory() {
+            return metadata -> new WebReactiveClient(metadata, webClient, errorDecoder, decode404, logger);
+        }
+
     }
 
-    private static final class ParseHandlersByName {
+    static final class ParseHandlersByName {
         private final Contract contract;
         private final Encoder encoder;
-        private final ErrorDecoder errorDecoder;
         private final ReactiveMethodHandler.Factory factory;
 
         ParseHandlersByName(
                 final Contract contract,
                 final Encoder encoder,
-                final ErrorDecoder errorDecoder,
                 final ReactiveMethodHandler.Factory factory) {
             this.contract = contract;
             this.factory = factory;
-            this.errorDecoder = errorDecoder;
             this.encoder = checkNotNull(encoder, "encoder must not be null");
         }
 
@@ -346,8 +351,8 @@ public class ReactiveFeign extends Feign {
                     buildTemplate = new BuildTemplateByResolvingArgs(md);
                 }
 
-                result.put(md.configKey(), factory.create(
-                        key, md, buildTemplate, errorDecoder));
+                ReactiveMethodHandler methodHandler = factory.create(buildTemplate, key, md);
+                result.put(md.configKey(), methodHandler);
             }
 
             return result;
