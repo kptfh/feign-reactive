@@ -41,17 +41,35 @@ public interface IcecreamServiceApi {
 Build the client :
 
 ```java
-WebClient webClient = WebClient.create()
 
 /* Create instance of your API */
-client = ReactiveFeign
+IcecreamServiceApi client = ReactiveFeign
     .builder()
-    .webClient(webClient)
-    //encodes body and parameters
+    .webClient(WebClient.create())
     .encoder(new JacksonEncoder(TestUtils.MAPPER))
     .logger(new Slf4jLogger())
     .logLevel(Logger.Level.FULL)
     .target(IcecreamServiceApi.class, "http://www.icecreame.com")
+
+/* Execute requests asynchronously */
+Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();
+Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
+```
+
+or cloud aware client :
+
+```java
+ IcecreamServiceApi client = CloudReactiveFeign
+    .builder()
+    .webClient(WebClient.create())
+    .encoder(new JacksonEncoder(new ObjectMapper()))
+    //Ribbon load balancer
+    .setLoadBalancerCommand(
+            LoadBalancerCommand.builder()
+                    .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
+                    .build()
+    )
+    .target(TestInterface.class, "http://"+serviceName);
 
 /* Execute requests asynchronously */
 Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();

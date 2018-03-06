@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.loadbalancer.AbstractLoadBalancer;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.CloudReactiveFeign;
-import feign.ReactiveFeign;
 import feign.RequestLine;
 import feign.jackson.JacksonEncoder;
 import okhttp3.mockwebserver.MockResponse;
@@ -47,19 +46,17 @@ public class CloudReactiveHttpClientTest {
                 hostAndPort(server1.url("").url()) + "," + hostAndPort(
                         server2.url("").url()));
 
-        ReactiveFeign.Builder builder = CloudReactiveFeign
+        TestInterface client = CloudReactiveFeign
                 .builder()
                 .webClient(WebClient.create())
                 //encodes body and parameters
-                .encoder(new JacksonEncoder(new ObjectMapper()));
-
-        builder = ((CloudReactiveFeign.Builder)builder).setLoadBalancerCommand(
-                LoadBalancerCommand.builder()
-                        .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
-                        .build()
-        );
-
-        TestInterface client = builder.target(TestInterface.class, "http://"+serviceName);
+                .encoder(new JacksonEncoder(new ObjectMapper()))
+                .setLoadBalancerCommand(
+                        LoadBalancerCommand.builder()
+                                .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
+                                .build()
+                )
+                .target(TestInterface.class, "http://"+serviceName);
 
         try {
 
