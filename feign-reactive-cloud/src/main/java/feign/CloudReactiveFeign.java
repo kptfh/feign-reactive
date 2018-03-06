@@ -1,15 +1,18 @@
 package feign;
 
+import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
+import feign.reactive.ReactiveMethodHandlerFactory;
 import feign.reactive.client.ReactiveClient;
 import feign.reactive.client.ReactiveClientFactory;
 import feign.reactive.client.RibbonReactiveClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Allows to specify ribbon {@link LoadBalancerCommand}.
+ * Allows to specify ribbon {@link LoadBalancerCommand}
+ *  and HystrixObservableCommand.Setter.
  *
  * @author Sergii Karpenko
  */
@@ -25,11 +28,33 @@ public class CloudReactiveFeign extends ReactiveFeign{
 
     public static class Builder extends ReactiveFeign.Builder {
 
+        private HystrixObservableCommand.Setter hystrixObservableCommandSetter;
+        private ReactiveMethodHandlerFactory fallbackMethodHandlerFactory;
         private LoadBalancerCommand<Object> loadBalancerCommand;
+
+        public Builder setHystrixObservableCommandSetter(HystrixObservableCommand.Setter hystrixObservableCommandSetter) {
+            this.hystrixObservableCommandSetter = hystrixObservableCommandSetter;
+            return this;
+        }
+
+        public Builder setFallbackMethodHandlerFactory(ReactiveMethodHandlerFactory fallbackMethodHandlerFactory) {
+            this.fallbackMethodHandlerFactory = fallbackMethodHandlerFactory;
+            return this;
+        }
 
         public Builder setLoadBalancerCommand(LoadBalancerCommand<Object> loadBalancerCommand) {
             this.loadBalancerCommand = loadBalancerCommand;
             return this;
+        }
+
+        @Override
+        protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
+            ReactiveMethodHandlerFactory reactiveMethodHandlerFactory = super.buildReactiveMethodHandlerFactory();
+            return new HystrixMethodHandler.Factory(
+                    reactiveMethodHandlerFactory,
+                    fallbackMethodHandlerFactory,
+                    hystrixObservableCommandSetter
+            );
         }
 
         @Override
@@ -79,32 +104,5 @@ public class CloudReactiveFeign extends ReactiveFeign{
             return this;
         }
 
-
-        /**
-         * Adds a single request interceptor to the builder.
-         *
-         * @param requestInterceptor request interceptor to add
-         *
-         * @return this builder
-         */
-        public Builder requestInterceptor(
-                final RequestInterceptor requestInterceptor) {
-            super.requestInterceptor(requestInterceptor);
-            return this;
-        }
-
-        /**
-         * Sets the full set of request interceptors for the builder, overwriting
-         * any previous interceptors.
-         *
-         * @param requestInterceptors set of request interceptors
-         *
-         * @return this builder
-         */
-        public Builder requestInterceptors(
-                final Iterable<RequestInterceptor> requestInterceptors) {
-            super.requestInterceptors(requestInterceptors);
-            return this;
-        }
     }
 }

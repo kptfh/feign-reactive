@@ -1,12 +1,15 @@
 package feign.reactive.client;
 
+import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.MethodMetadata;
 import feign.Request;
 import org.reactivestreams.Publisher;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import rx.Observable;
 import rx.RxReactiveStreams;
 
 import java.lang.reflect.ParameterizedType;
@@ -23,7 +26,9 @@ public class RibbonReactiveClient implements ReactiveClient{
     private final Type returnPublisherType;
 
     public RibbonReactiveClient(MethodMetadata metadata,
-                                LoadBalancerCommand<Object> loadBalancerCommand, ReactiveClient reactiveClient) {
+                                @Nullable
+                                LoadBalancerCommand<Object> loadBalancerCommand,
+                                ReactiveClient reactiveClient) {
         this.loadBalancerCommand = loadBalancerCommand;
         this.reactiveClient = reactiveClient;
 
@@ -32,15 +37,21 @@ public class RibbonReactiveClient implements ReactiveClient{
 
     @Override
     public Publisher<Object> executeRequest(Request request) {
-        Publisher<Object> publisher = RxReactiveStreams.toPublisher(
-                loadBalancerCommand.submit(server -> {
 
-                    Request lbRequest = loadBalanceRequest(request, server);
+        if(loadBalancerCommand != null){
+            Observable<Object> observable = loadBalancerCommand.submit(server -> {
 
-                    return RxReactiveStreams.toObservable(reactiveClient.executeRequest(lbRequest));
-                }));
+                Request lbRequest = loadBalanceRequest(request, server);
 
-        return returnPublisherType == Mono.class ? Mono.from(publisher) : Flux.from(publisher);
+                return RxReactiveStreams.toObservable(reactiveClient.executeRequest(lbRequest));
+            });
+
+            Publisher<Object> publisher = RxReactiveStreams.toPublisher(observable);
+
+            return returnPublisherType == Mono.class ? Mono.from(publisher) : Flux.from(publisher);
+        } else {
+            return reactiveClient.executeRequest(request);
+        }
     }
 
     Request loadBalanceRequest(Request request, Server server) {

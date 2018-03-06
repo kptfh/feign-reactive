@@ -15,7 +15,6 @@
  */
 package feign.reactive;
 
-import feign.ReactiveMethodHandler;
 import feign.Request;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -31,7 +30,7 @@ import static feign.reactive.Logger.MessageSupplier.msg;
 
 public class Logger {
 
-    private final org.slf4j.Logger logger = LoggerFactory.getLogger(ReactiveMethodHandler.class);
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(ReactiveClientMethodHandler.class);
 
     public void logRequest(String feignMethodTag, Request request) {
         if(logger.isDebugEnabled()){
