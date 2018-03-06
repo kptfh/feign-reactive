@@ -20,30 +20,33 @@ import static feign.Util.checkNotNull;
  */
 public class HystrixMethodHandler implements ReactiveMethodHandler {
 
+    private final Target target;
     private final MethodMetadata methodMetadata;
     private final Type returnPublisherType;
     private final ReactiveMethodHandler methodHandler;
     private final Function<Throwable, Object> fallbackFactory;
-    private HystrixObservableCommand.Setter hystrixObservableCommandSetter;
+    private CloudReactiveFeign.SetterFactory commandSetterFactory;
 
     private HystrixMethodHandler(
+            Target target,
             MethodMetadata methodMetadata,
             ReactiveMethodHandler methodHandler,
-            @Nullable
-                    Function<Throwable, Object> fallbackFactory,
-            HystrixObservableCommand.Setter hystrixObservableCommandSetter) {
+            CloudReactiveFeign.SetterFactory commandSetterFactory,
+            @Nullable Function<Throwable, Object> fallbackFactory) {
+        this.target = checkNotNull(target, "target must be not null");;
         this.methodMetadata = checkNotNull(methodMetadata, "methodMetadata must be not null");
         returnPublisherType = ((ParameterizedType) methodMetadata.returnType()).getRawType();
         this.methodHandler = checkNotNull(methodHandler, "methodHandler must be not null");
         this.fallbackFactory = fallbackFactory;
-        this.hystrixObservableCommandSetter = checkNotNull(hystrixObservableCommandSetter, "hystrixObservableCommandSetter must be not null");
+        this.commandSetterFactory = checkNotNull(commandSetterFactory, "hystrixObservableCommandSetter must be not null");
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public Publisher invoke(final Object[] argv) {
 
-        Observable<Object> observable = new HystrixObservableCommand<Object>(hystrixObservableCommandSetter){
+        HystrixObservableCommand.Setter setter = commandSetterFactory.create(target, methodMetadata);
+        Observable<Object> observable = new HystrixObservableCommand<Object>(setter){
             @Override
             protected Observable<Object> construct() {
                 return RxReactiveStreams.toObservable((Publisher)methodHandler.invoke(argv));
@@ -74,24 +77,25 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
     static class Factory implements ReactiveMethodHandlerFactory {
         private final ReactiveMethodHandlerFactory methodHandlerFactory;
         private final Function<Throwable, Object> fallbackFactory;
-        private final HystrixObservableCommand.Setter hystrixObservableCommandSetter;
+        private final CloudReactiveFeign.SetterFactory commandSetterFactory;
 
         Factory(ReactiveMethodHandlerFactory methodHandlerFactory,
+                CloudReactiveFeign.SetterFactory commandSetterFactory,
                 @Nullable
-                Function<Throwable, Object> fallbackFactory,
-                HystrixObservableCommand.Setter hystrixObservableCommandSetter) {
+                Function<Throwable, Object> fallbackFactory) {
             this.methodHandlerFactory = checkNotNull(methodHandlerFactory, "methodHandlerFactory must not be null");
+            this.commandSetterFactory = checkNotNull(commandSetterFactory, "commandSetterFactory must not be null");
             this.fallbackFactory = fallbackFactory;
-            this.hystrixObservableCommandSetter = checkNotNull(hystrixObservableCommandSetter, "hystrixObservableCommandSetter must not be null");
         }
 
         @Override
         public ReactiveMethodHandler create(final Target target, final MethodMetadata metadata) {
             return new HystrixMethodHandler(
+                    target,
                     metadata,
                     methodHandlerFactory.create(target, metadata),
-                    fallbackFactory,
-                    hystrixObservableCommandSetter);
+                    commandSetterFactory,
+                    fallbackFactory);
         }
     }
 }

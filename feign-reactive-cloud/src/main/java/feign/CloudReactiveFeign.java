@@ -1,5 +1,7 @@
 package feign;
 
+import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.codec.Encoder;
@@ -30,12 +32,18 @@ public class CloudReactiveFeign extends ReactiveFeign{
 
     public static class Builder<T> extends ReactiveFeign.Builder<T> {
 
-        private HystrixObservableCommand.Setter hystrixObservableCommandSetter;
+        private SetterFactory commandSetterFactory = (target, methodMetadata) -> {
+            String groupKey = target.name();
+            String commandKey = methodMetadata.configKey();
+            return HystrixObservableCommand.Setter
+                    .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
+                    .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
+        };
         private Function<Throwable, ? extends T> fallbackFactory;
         private LoadBalancerCommand<Object> loadBalancerCommand;
 
-        public Builder<T> setHystrixObservableCommandSetter(HystrixObservableCommand.Setter hystrixObservableCommandSetter) {
-            this.hystrixObservableCommandSetter = hystrixObservableCommandSetter;
+        public Builder<T> setHystrixCommandSetterFactory(SetterFactory commandSetterFactory) {
+            this.commandSetterFactory = commandSetterFactory;
             return this;
         }
 
@@ -57,11 +65,11 @@ public class CloudReactiveFeign extends ReactiveFeign{
         @Override
         protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
             ReactiveMethodHandlerFactory reactiveMethodHandlerFactory = super.buildReactiveMethodHandlerFactory();
-            return hystrixObservableCommandSetter != null
+            return commandSetterFactory != null
                     ? new HystrixMethodHandler.Factory(
                     reactiveMethodHandlerFactory,
-                    (Function<Throwable, Object>) fallbackFactory,
-                    hystrixObservableCommandSetter)
+                    commandSetterFactory,
+                    (Function<Throwable, Object>) fallbackFactory)
                     : reactiveMethodHandlerFactory;
         }
 
@@ -111,6 +119,10 @@ public class CloudReactiveFeign extends ReactiveFeign{
             super.options(options);
             return this;
         }
-
     }
+
+    public interface SetterFactory {
+        HystrixObservableCommand.Setter create(Target<?> target, MethodMetadata methodMetadata);
+    }
+
 }
