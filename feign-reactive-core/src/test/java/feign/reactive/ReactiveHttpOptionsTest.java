@@ -57,8 +57,7 @@ public class ReactiveHttpOptionsTest {
             5000, 5000, true
     );
 
-    IcecreamServiceApi client = ReactiveFeign
-            .builder()
+    IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
             .webClient(webClient)
             .options(options)
             //encodes body and parameters
@@ -79,8 +78,7 @@ public class ReactiveHttpOptionsTest {
       // Plain old Feign Request.Options (regression)
       Request.Options options = new Request.Options(5000,5000);
 
-      IcecreamServiceApi client = ReactiveFeign
-              .builder()
+      IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
               .webClient(webClient)
               .options(options)
               //encodes body and parameters

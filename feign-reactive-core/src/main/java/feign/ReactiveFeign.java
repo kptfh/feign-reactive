@@ -4,8 +4,9 @@ import feign.InvocationHandlerFactory.MethodHandler;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
-import feign.reactive.BuildTemplateByResolvingArgs;
+import feign.reactive.ReactiveClientMethodHandler;
 import feign.reactive.ReactiveDelegatingContract;
+import feign.reactive.ReactiveMethodHandlerFactory;
 import feign.reactive.ReactiveOptions;
 import feign.reactive.client.ReactiveClientFactory;
 import feign.reactive.client.WebReactiveClient;
@@ -41,8 +42,8 @@ public class ReactiveFeign {
         this.factory = factory;
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static <T> Builder<T> builder() {
+        return new Builder<>();
     }
 
     @SuppressWarnings("unchecked")
@@ -79,7 +80,7 @@ public class ReactiveFeign {
     /**
      * ReactiveFeign builder.
      */
-    public static class Builder {
+    public static class Builder<T> {
         private final List<RequestInterceptor> requestInterceptors = new ArrayList<>();
         private Contract contract = new ReactiveDelegatingContract(new Contract.Default());
         private WebClient webClient;
@@ -91,7 +92,7 @@ public class ReactiveFeign {
 
         private feign.reactive.Logger logger = new feign.reactive.Logger();
 
-        public Builder webClient(final WebClient webClient) {
+        public Builder<T> webClient(final WebClient webClient) {
             this.webClient = webClient;
             return this;
         }
@@ -105,7 +106,7 @@ public class ReactiveFeign {
          *
          * @return this builder
          */
-        public Builder contract(final Contract contract) {
+        public Builder<T> contract(final Contract contract) {
             this.contract = new ReactiveDelegatingContract(contract);
             return this;
         }
@@ -117,7 +118,7 @@ public class ReactiveFeign {
          *
          * @return this builder
          */
-        public Builder encoder(final Encoder encoder) {
+        public Builder<T> encoder(final Encoder encoder) {
             this.encoder = encoder;
             return this;
         }
@@ -137,7 +138,7 @@ public class ReactiveFeign {
          *
          * @return this builder
          */
-        public Builder decode404() {
+        public Builder<T> decode404() {
             this.decode404 = true;
             return this;
         }
@@ -149,7 +150,7 @@ public class ReactiveFeign {
          *
          * @return this builder
          */
-        public Builder errorDecoder(final ErrorDecoder errorDecoder) {
+        public Builder<T> errorDecoder(final ErrorDecoder errorDecoder) {
             this.errorDecoder = errorDecoder;
             return this;
         }
@@ -161,7 +162,7 @@ public class ReactiveFeign {
          *
          * @return this builder
          */
-        public Builder options(final Request.Options options) {
+        public Builder<T> options(final Request.Options options) {
             boolean tryUseCompression = options instanceof ReactiveOptions
                     && ((ReactiveOptions) options).isTryUseCompression();
 
@@ -178,45 +179,14 @@ public class ReactiveFeign {
 
 
         /**
-         * Adds a single request interceptor to the builder.
-         *
-         * @param requestInterceptor request interceptor to add
-         *
-         * @return this builder
-         */
-        public Builder requestInterceptor(
-                final RequestInterceptor requestInterceptor) {
-            this.requestInterceptors.add(requestInterceptor);
-            return this;
-        }
-
-        /**
-         * Sets the full set of request interceptors for the builder, overwriting
-         * any previous interceptors.
-         *
-         * @param requestInterceptors set of request interceptors
-         *
-         * @return this builder
-         */
-        public Builder requestInterceptors(
-                final Iterable<RequestInterceptor> requestInterceptors) {
-            this.requestInterceptors.clear();
-            for (RequestInterceptor requestInterceptor : requestInterceptors) {
-                this.requestInterceptors.add(requestInterceptor);
-            }
-            return this;
-        }
-
-        /**
          * Defines target and builds client.
          *
          * @param apiType API interface
          * @param url base URL
-         * @param <T> class of API interface
          *
          * @return built client
          */
-         public <T> T target(final Class<T> apiType, final String url) {
+         public T target(final Class<T> apiType, final String url) {
             return target(new Target.HardCodedTarget<>(apiType, url));
         }
 
@@ -224,11 +194,10 @@ public class ReactiveFeign {
          * Defines target and builds client.
          *
          * @param target target instance
-         * @param <T> class of API interface
          *
          * @return built client
          */
-         public <T> T target(final Target<T> target) {
+         public T target(final Target<T> target) {
             return build().newInstance(target);
         }
 
@@ -236,14 +205,15 @@ public class ReactiveFeign {
             checkNotNull(this.webClient,
                     "WebClient instance wasn't provided in ReactiveFeign builder");
 
-
-
             final ParseHandlersByName handlersByName = new ParseHandlersByName(
-                    contract, encoder,
-                    new ReactiveMethodHandler.Factory(
-                            buildReactiveClientFactory(),
-                            requestInterceptors));
+                    contract,
+                    buildReactiveMethodHandlerFactory());
             return new ReactiveFeign(handlersByName, invocationHandlerFactory);
+        }
+
+        protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
+            return new ReactiveClientMethodHandler.Factory(
+                    encoder, buildReactiveClientFactory());
         }
 
         protected ReactiveClientFactory buildReactiveClientFactory() {
@@ -254,38 +224,22 @@ public class ReactiveFeign {
 
     static final class ParseHandlersByName {
         private final Contract contract;
-        private final Encoder encoder;
-        private final ReactiveMethodHandler.Factory factory;
+        private final ReactiveMethodHandlerFactory factory;
 
         ParseHandlersByName(
                 final Contract contract,
-                final Encoder encoder,
-                final ReactiveMethodHandler.Factory factory) {
+                final ReactiveMethodHandlerFactory factory) {
             this.contract = contract;
             this.factory = factory;
-            this.encoder = checkNotNull(encoder, "encoder must not be null");
         }
 
-        Map<String, MethodHandler> apply(final Target key) {
+        Map<String, MethodHandler> apply(final Target target) {
             final List<MethodMetadata> metadata = contract
-                    .parseAndValidatateMetadata(key.type());
+                    .parseAndValidatateMetadata(target.type());
             final Map<String, MethodHandler> result = new LinkedHashMap<>();
 
             for (final MethodMetadata md : metadata) {
-                BuildTemplateByResolvingArgs buildTemplate;
-
-                if (!md.formParams().isEmpty()
-                        && md.template().bodyTemplate() == null) {
-                    buildTemplate = new BuildTemplateByResolvingArgs
-                            .BuildFormEncodedTemplateFromArgs(md, encoder);
-                } else if (md.bodyIndex() != null) {
-                    buildTemplate = new BuildTemplateByResolvingArgs
-                            .BuildEncodedTemplateFromArgs(md, encoder);
-                } else {
-                    buildTemplate = new BuildTemplateByResolvingArgs(md);
-                }
-
-                ReactiveMethodHandler methodHandler = factory.create(buildTemplate, key, md);
+                ReactiveMethodHandler methodHandler = factory.create(target, md);
                 result.put(md.configKey(), methodHandler);
             }
 

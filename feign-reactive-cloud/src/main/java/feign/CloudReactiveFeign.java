@@ -1,15 +1,20 @@
 package feign;
 
+import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
+import feign.reactive.ReactiveMethodHandlerFactory;
 import feign.reactive.client.ReactiveClient;
 import feign.reactive.client.ReactiveClientFactory;
 import feign.reactive.client.RibbonReactiveClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.function.Function;
+
 /**
- * Allows to specify ribbon {@link LoadBalancerCommand}.
+ * Allows to specify ribbon {@link LoadBalancerCommand}
+ *  and HystrixObservableCommand.Setter.
  *
  * @author Sergii Karpenko
  */
@@ -19,17 +24,45 @@ public class CloudReactiveFeign extends ReactiveFeign{
         super(targetToHandlersByName, factory);
     }
 
-    public static CloudReactiveFeign.Builder builder() {
-        return new CloudReactiveFeign.Builder();
+    public static <T> Builder<T> builder() {
+        return new Builder<>();
     }
 
-    public static class Builder extends ReactiveFeign.Builder {
+    public static class Builder<T> extends ReactiveFeign.Builder<T> {
 
+        private HystrixObservableCommand.Setter hystrixObservableCommandSetter;
+        private Function<Throwable, ? extends T> fallbackFactory;
         private LoadBalancerCommand<Object> loadBalancerCommand;
 
-        public Builder setLoadBalancerCommand(LoadBalancerCommand<Object> loadBalancerCommand) {
+        public Builder<T> setHystrixObservableCommandSetter(HystrixObservableCommand.Setter hystrixObservableCommandSetter) {
+            this.hystrixObservableCommandSetter = hystrixObservableCommandSetter;
+            return this;
+        }
+
+        public Builder<T> setFallback(T fallback) {
+            setFallbackFactory(throwable -> fallback);
+            return this;
+        }
+
+        public Builder<T> setFallbackFactory(Function<Throwable, ? extends T> fallbackFactory) {
+            this.fallbackFactory = fallbackFactory;
+            return this;
+        }
+
+        public Builder<T> setLoadBalancerCommand(LoadBalancerCommand<Object> loadBalancerCommand) {
             this.loadBalancerCommand = loadBalancerCommand;
             return this;
+        }
+
+        @Override
+        protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
+            ReactiveMethodHandlerFactory reactiveMethodHandlerFactory = super.buildReactiveMethodHandlerFactory();
+            return hystrixObservableCommandSetter != null
+                    ? new HystrixMethodHandler.Factory(
+                    reactiveMethodHandlerFactory,
+                    (Function<Throwable, Object>) fallbackFactory,
+                    hystrixObservableCommandSetter)
+                    : reactiveMethodHandlerFactory;
         }
 
         @Override
@@ -44,67 +77,40 @@ public class CloudReactiveFeign extends ReactiveFeign{
         }
 
         @Override
-        public Builder webClient(final WebClient webClient){
+        public Builder<T> webClient(final WebClient webClient){
             super.webClient(webClient);
             return this;
         }
 
         @Override
-        public Builder contract(final Contract contract) {
+        public Builder<T> contract(final Contract contract) {
             super.contract(contract);
             return this;
         }
 
         @Override
-        public Builder encoder(final Encoder encoder) {
+        public Builder<T> encoder(final Encoder encoder) {
             super.encoder(encoder);
             return this;
         }
 
         @Override
-        public Builder decode404() {
+        public Builder<T> decode404() {
             super.decode404();
             return this;
         }
 
         @Override
-        public Builder errorDecoder(final ErrorDecoder errorDecoder) {
+        public Builder<T> errorDecoder(final ErrorDecoder errorDecoder) {
             super.errorDecoder(errorDecoder);
             return this;
         }
 
         @Override
-        public Builder options(final Request.Options options) {
+        public Builder<T> options(final Request.Options options) {
             super.options(options);
             return this;
         }
 
-
-        /**
-         * Adds a single request interceptor to the builder.
-         *
-         * @param requestInterceptor request interceptor to add
-         *
-         * @return this builder
-         */
-        public Builder requestInterceptor(
-                final RequestInterceptor requestInterceptor) {
-            super.requestInterceptor(requestInterceptor);
-            return this;
-        }
-
-        /**
-         * Sets the full set of request interceptors for the builder, overwriting
-         * any previous interceptors.
-         *
-         * @param requestInterceptors set of request interceptors
-         *
-         * @return this builder
-         */
-        public Builder requestInterceptors(
-                final Iterable<RequestInterceptor> requestInterceptors) {
-            super.requestInterceptors(requestInterceptors);
-            return this;
-        }
     }
 }

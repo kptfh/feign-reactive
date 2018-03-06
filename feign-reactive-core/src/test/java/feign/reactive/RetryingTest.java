@@ -1,6 +1,7 @@
 package feign.reactive;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import feign.FeignException;
 import feign.ReactiveFeign;
@@ -13,6 +14,7 @@ import org.junit.rules.ExpectedException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -20,20 +22,15 @@ import static org.hamcrest.Matchers.containsString;
 public class RetryingTest {
 
     @ClassRule
-    public static WireMockClassRule wireMockRule = new WireMockClassRule(8089);
-
-    @Rule
-    public WireMockClassRule instanceRule = wireMockRule;
+    public static WireMockClassRule wireMockRule = new WireMockClassRule(wireMockConfig().dynamicPort());
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    private static IcecreamServiceApi client = ReactiveFeign
-            .builder()
-            .webClient(WebClient.create())
-            //encodes body and parameters
-            .encoder(new JacksonEncoder(TestUtils.MAPPER))
-            .target(IcecreamServiceApi.class, "http://localhost:8089");
+    @Before
+    public void resetServers(){
+        wireMockRule.resetAll();
+    }
 
     @Test
     public void testRetrying_success() throws JsonProcessingException {
@@ -41,43 +38,48 @@ public class RetryingTest {
         IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
         String orderStr = TestUtils.MAPPER.writeValueAsString(orderGenerated);
 
-        String scenario = "testRetrying_success";
-        String orderUrl = "/icecream/orders/1";
-
-        stubFor(get(urlEqualTo(orderUrl))
-                .withHeader("Accept", equalTo("application/json"))
-                .inScenario(scenario)
-                .whenScenarioStateIs(STARTED)
-                .willReturn(aResponse()
-                        .withStatus(503)
-                        .withHeader("Retry-After", "1"))
-                .willSetStateTo("attempt1"));
-
-        stubFor(get(urlEqualTo(orderUrl))
-                .withHeader("Accept", equalTo("application/json"))
-                .inScenario(scenario)
-                .whenScenarioStateIs("attempt1")
-                .willReturn(aResponse()
-                        .withStatus(503)
-                        .withHeader("Retry-After", "1"))
-                .willSetStateTo("attempt2"));
-
-        stubFor(get(urlEqualTo(orderUrl))
-                .withHeader("Accept", equalTo("application/json"))
-                .inScenario(scenario)
-                .whenScenarioStateIs("attempt2")
-                .willReturn(aResponse()
+        mockResponseAfterSeveralAttempts(wireMockRule, 2, "testRetrying_success", "/icecream/orders/1",
+                aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody(orderStr)));
+                        .withBody(orderStr));
 
-        /* When */
+        IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
+                .webClient(WebClient.create())
+                //encodes body and parameters
+                .encoder(new JacksonEncoder(TestUtils.MAPPER))
+                .target(IcecreamServiceApi.class, "http://localhost:"+wireMockRule.port());
+
         IceCreamOrder order = client.findOrder(1)
                 .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
                 .block();
 
         assertThat(order)
                 .isEqualToComparingFieldByFieldRecursively(orderGenerated);
+    }
+
+    private static void mockResponseAfterSeveralAttempts(WireMockClassRule rule, int failedAttemptsNo, String scenario, String url,
+                                                  ResponseDefinitionBuilder response){
+        String state = STARTED;
+        for(int attempt = 0; attempt < failedAttemptsNo; attempt++){
+            String nextState = "attempt"+attempt;
+            rule.stubFor(get(urlEqualTo(url))
+                    .withHeader("Accept", equalTo("application/json"))
+                    .inScenario(scenario)
+                    .whenScenarioStateIs(state)
+                    .willReturn(aResponse()
+                            .withStatus(503)
+                            .withHeader("Retry-After", "1"))
+                    .willSetStateTo(nextState));
+
+            state = nextState;
+        }
+
+        rule.stubFor(get(urlEqualTo(url))
+                .withHeader("Accept", equalTo("application/json"))
+                .inScenario(scenario)
+                .whenScenarioStateIs(state)
+                .willReturn(response));
     }
 
     @Test
@@ -88,13 +90,18 @@ public class RetryingTest {
 
         String orderUrl = "/icecream/orders/1";
 
-        stubFor(get(urlEqualTo(orderUrl))
+        wireMockRule.stubFor(get(urlEqualTo(orderUrl))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse()
                         .withStatus(503)
                         .withHeader("Retry-After", "1")));
 
-        /* When */
+        IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
+                .webClient(WebClient.create())
+                //encodes body and parameters
+                .encoder(new JacksonEncoder(TestUtils.MAPPER))
+                .target(IcecreamServiceApi.class, "http://localhost:"+wireMockRule.port());
+
         client.findOrder(1)
                 .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
                 .block();

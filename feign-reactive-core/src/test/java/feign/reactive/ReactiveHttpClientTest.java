@@ -50,8 +50,7 @@ public class ReactiveHttpClientTest {
     @Before
     public void setUp(){
         targetUrl = "http://localhost:" + port;
-        client = ReactiveFeign
-                .builder()
+        client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(webClient)
                 //encodes body and parameters
                 .encoder(new JacksonEncoder(TestUtils.MAPPER))
@@ -110,8 +109,7 @@ public class ReactiveHttpClientTest {
     expectedException.expectMessage(
         "WebClient instance wasn't provided in ReactiveFeign builder");
 
-    ReactiveFeign
-        .builder()
+    ReactiveFeign.<IcecreamServiceApi>builder()
         .target(IcecreamServiceApi.class, targetUrl);
   }
 
@@ -122,8 +120,7 @@ public class ReactiveHttpClientTest {
     expectedException.expectMessage(
             containsString("IcecreamServiceApiBroken#findOrder(int)"));
 
-    ReactiveFeign
-        .builder()
+    ReactiveFeign.<IcecreamServiceApiBroken>builder()
         .webClient(webClient)
         .target(IcecreamServiceApiBroken.class, targetUrl);
   }

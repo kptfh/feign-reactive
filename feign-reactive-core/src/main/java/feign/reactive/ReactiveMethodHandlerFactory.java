@@ -1,0 +1,11 @@
+package feign.reactive;
+
+
+import feign.MethodMetadata;
+import feign.ReactiveMethodHandler;
+import feign.Target;
+
+public interface ReactiveMethodHandlerFactory {
+
+    ReactiveMethodHandler create(final Target target, final MethodMetadata metadata);
+}
