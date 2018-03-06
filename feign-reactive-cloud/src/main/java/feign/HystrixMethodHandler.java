@@ -9,10 +9,13 @@ import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.RxReactiveStreams;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.function.Function;
 
+import static feign.Feign.configKey;
 import static feign.Util.checkNotNull;
 
 /**
@@ -20,19 +23,24 @@ import static feign.Util.checkNotNull;
  */
 public class HystrixMethodHandler implements ReactiveMethodHandler {
 
-    private final MethodMetadata methodMetadata;
+    private final Method method;
     private final Type returnPublisherType;
     private final ReactiveMethodHandler methodHandler;
     private final Function<Throwable, Object> fallbackFactory;
     private HystrixObservableCommand.Setter hystrixObservableCommandSetter;
 
     private HystrixMethodHandler(
-            MethodMetadata methodMetadata,
+            Target target, MethodMetadata methodMetadata,
             ReactiveMethodHandler methodHandler,
             @Nullable
-                    Function<Throwable, Object> fallbackFactory,
+            Function<Throwable, Object> fallbackFactory,
             HystrixObservableCommand.Setter hystrixObservableCommandSetter) {
-        this.methodMetadata = checkNotNull(methodMetadata, "methodMetadata must be not null");
+        checkNotNull(target, "target must be not null");;
+        checkNotNull(methodMetadata, "methodMetadata must be not null");
+        method = Arrays.stream(target.type().getMethods())
+                .filter(method -> configKey(target.type(), method).equals(methodMetadata.configKey()))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException());
+
         returnPublisherType = ((ParameterizedType) methodMetadata.returnType()).getRawType();
         this.methodHandler = checkNotNull(methodHandler, "methodHandler must be not null");
         this.fallbackFactory = fallbackFactory;
@@ -53,8 +61,13 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
             protected Observable<Object> resumeWithFallback() {
                 if(fallbackFactory != null){
                     Object fallback = fallbackFactory.apply(getExecutionException());
-                    Object fallbackValue = getFallbackValue(fallback, argv);
-                    return Observable.just(fallbackValue);
+                    try {
+                        Object fallbackValue = method.invoke(fallback, argv);
+                        return Observable.just(fallbackValue);
+                    } catch (Exception e) {
+                        return Observable.error(e);
+                    }
+
                 } else {
                     return super.resumeWithFallback();
                 }
@@ -64,11 +77,6 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
         Publisher<Object> publisher = RxReactiveStreams.toPublisher(observable);
 
         return returnPublisherType == Mono.class ? Mono.from(publisher) : Flux.from(publisher);
-    }
-
-    protected Object getFallbackValue(Object fallback, final Object[] argv){
-        //TODO implement
-        return null;
     }
 
     static class Factory implements ReactiveMethodHandlerFactory {
@@ -88,7 +96,7 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
         @Override
         public ReactiveMethodHandler create(final Target target, final MethodMetadata metadata) {
             return new HystrixMethodHandler(
-                    metadata,
+                    target, metadata,
                     methodHandlerFactory.create(target, metadata),
                     fallbackFactory,
                     hystrixObservableCommandSetter);
