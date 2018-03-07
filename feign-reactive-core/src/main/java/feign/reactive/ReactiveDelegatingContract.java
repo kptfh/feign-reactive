@@ -5,6 +5,7 @@ import feign.MethodMetadata;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -32,10 +33,7 @@ public class ReactiveDelegatingContract implements Contract {
 
         for (final MethodMetadata metadata : metadatas) {
             final Type type = metadata.returnType();
-
-            if (!(type instanceof ParameterizedType)
-                    || !((ParameterizedType) type).getRawType().equals(Mono.class)
-                    && !((ParameterizedType) type).getRawType().equals(Flux.class)) {
+            if (!isMonoOrFlux(type)) {
                 throw new IllegalArgumentException(String.format(
                         "Method %s of contract %s doesn't returns reactor.core.publisher.Mono or reactor.core.publisher.Flux",
                         metadata.configKey(), targetType.getSimpleName()));
@@ -43,5 +41,11 @@ public class ReactiveDelegatingContract implements Contract {
         }
 
         return metadatas;
+    }
+
+    private boolean isMonoOrFlux(final Type type) {
+        return (type instanceof ParameterizedType)
+                && (((ParameterizedType) type).getRawType().equals(Mono.class)
+                    || ((ParameterizedType) type).getRawType().equals(Flux.class));
     }
 }

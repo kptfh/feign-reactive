@@ -7,6 +7,7 @@ import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
 import feign.reactive.ReactiveMethodHandlerFactory;
+import feign.reactive.HystrixMethodHandler;
 import feign.reactive.client.ReactiveClient;
 import feign.reactive.client.ReactiveClientFactory;
 import feign.reactive.client.RibbonReactiveClient;
@@ -18,7 +19,7 @@ import static java.util.Optional.ofNullable;
 
 /**
  * Allows to specify ribbon {@link LoadBalancerCommand}
- * and HystrixObservableCommand.Setter.
+ * and HystrixObservableCommand.Setter with fallback factory.
  *
  * @author Sergii Karpenko
  */

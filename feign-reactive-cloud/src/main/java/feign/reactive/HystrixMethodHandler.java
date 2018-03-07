@@ -1,7 +1,9 @@
-package feign;
+package feign.reactive;
 
 import com.netflix.hystrix.HystrixObservableCommand;
-import feign.reactive.ReactiveMethodHandlerFactory;
+import feign.CloudReactiveFeign;
+import feign.MethodMetadata;
+import feign.Target;
 import org.reactivestreams.Publisher;
 import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
@@ -36,16 +38,17 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
             @Nullable
                     Function<Throwable, Object> fallbackFactory) {
         checkNotNull(target, "target must be not null");
-        ;
+
         checkNotNull(methodMetadata, "methodMetadata must be not null");
         method = Arrays.stream(target.type().getMethods())
                 .filter(method -> configKey(target.type(), method).equals(methodMetadata.configKey()))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException());
+        method.setAccessible(true);
 
         returnPublisherType = ((ParameterizedType) methodMetadata.returnType()).getRawType();
         this.methodHandler = checkNotNull(methodHandler, "methodHandler must be not null");
         this.fallbackFactory = fallbackFactory;
-        checkNotNull(setterFactory, "hystrixObservableCommandSetter must be not null");
+        checkNotNull(setterFactory, "setterFactory must be not null");
         hystrixObservableCommandSetter = setterFactory.create(target, methodMetadata);
     }
 
@@ -64,10 +67,9 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
                 if (fallbackFactory != null) {
                     Object fallback = fallbackFactory.apply(getExecutionException());
                     try {
-                        method.setAccessible(true);
-                        Object fallbackValue = method.invoke(fallback, argv);
+                        Object fallbackValue = getFallbackValue(fallback, method, argv);
                         return RxReactiveStreams.toObservable((Publisher<Object>) fallbackValue);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         return Observable.error(e);
                     }
 
@@ -82,12 +84,16 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
         return returnPublisherType == Mono.class ? Mono.from(publisher) : Flux.from(publisher);
     }
 
-    static class Factory implements ReactiveMethodHandlerFactory {
+    protected Object getFallbackValue(Object target, Method method, Object[] argv) throws Throwable {
+        return method.invoke(target, argv);
+    }
+
+    public static class Factory implements ReactiveMethodHandlerFactory {
         private final ReactiveMethodHandlerFactory methodHandlerFactory;
         private final CloudReactiveFeign.SetterFactory commandSetterFactory;
         private final Function<Throwable, Object> fallbackFactory;
 
-        Factory(ReactiveMethodHandlerFactory methodHandlerFactory,
+        public Factory(ReactiveMethodHandlerFactory methodHandlerFactory,
                 CloudReactiveFeign.SetterFactory commandSetterFactory,
                 @Nullable
                         Function<Throwable, Object> fallbackFactory) {

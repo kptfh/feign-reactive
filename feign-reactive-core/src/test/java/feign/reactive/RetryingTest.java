@@ -22,6 +22,9 @@ import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
+/**
+ * @author Sergii Karpenko
+ */
 public class RetryingTest {
 
     @ClassRule

@@ -1,5 +1,6 @@
-package feign;
+package feign.reactive;
 
+import feign.InvocationHandlerFactory;
 import org.reactivestreams.Publisher;
 
 /**

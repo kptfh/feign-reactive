@@ -13,6 +13,7 @@
     <modules>
         <module>feign-reactive-core</module>
         <module>feign-reactive-cloud</module>
+        <module>feign-reactive-load-tests</module>
     </modules>
 
     <name>feign-reactive</name>

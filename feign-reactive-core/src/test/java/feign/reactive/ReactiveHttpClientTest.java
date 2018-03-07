@@ -26,6 +26,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
+/**
+ * @author Sergii Karpenko
+ */
+
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = {IcecreamController.class},

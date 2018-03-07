@@ -1,6 +1,8 @@
-package feign;
+package feign.reactive;
 
+import feign.InvocationHandlerFactory;
 import feign.InvocationHandlerFactory.MethodHandler;
+import feign.Target;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,7 +20,7 @@ import static feign.Util.checkNotNull;
  *
  * @author Sergii Karpenko
  */
-final class ReactiveInvocationHandler implements InvocationHandler {
+public final class ReactiveInvocationHandler implements InvocationHandler {
     private final Target<?> target;
     private final Map<Method, MethodHandler> dispatch;
 
@@ -43,13 +45,7 @@ final class ReactiveInvocationHandler implements InvocationHandler {
             case "toString":
                 return toString();
             default:
-                if (isReturnsMonoOrFlux(method)) {
-                    return invokeRequestMethod(method, args);
-                } else {
-                    throw new FeignException(String.format(
-                            "Method %s of contract %s doesn't return reactor.core.publisher.Mono or reactor.core.publisher.Flux",
-                            method.getName(), method.getDeclaringClass().getSimpleName()));
-                }
+                return invokeRequestMethod(method, args);
         }
     }
 
@@ -103,7 +99,7 @@ final class ReactiveInvocationHandler implements InvocationHandler {
     /**
      * Factory for ReactiveInvocationHandler.
      */
-    static final class Factory implements InvocationHandlerFactory {
+    public static final class Factory implements InvocationHandlerFactory {
 
         @Override
         public InvocationHandler create(final Target target,

@@ -20,6 +20,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 /**
  * Test the new capability of Reactive Feign client to support both Feign
  * Request.Options (regression) and the new ReactiveOptions configuration.
+ *
+ * @author Sergii Karpenko
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(

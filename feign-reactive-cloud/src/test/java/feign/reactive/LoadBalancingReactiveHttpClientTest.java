@@ -31,7 +31,9 @@ import static com.netflix.config.ConfigurationManager.getConfigInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.isA;
 
-
+/**
+ * @author Sergii Karpenko
+ */
 public class LoadBalancingReactiveHttpClientTest {
 
     @ClassRule
