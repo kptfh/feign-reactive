@@ -51,7 +51,7 @@ IcecreamServiceApi client = ReactiveFeign
     .logLevel(Logger.Level.FULL)
     .target(IcecreamServiceApi.class, "http://www.icecreame.com")
 
-/* Execute requests asynchronously */
+/* Execute nonblocking requests */
 Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();
 Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 ```
@@ -59,19 +59,25 @@ Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 or cloud aware client :
 
 ```java
- IcecreamServiceApi client = CloudReactiveFeign
-    .builder()
+ TestInterface client = CloudReactiveFeign.<TestInterface>builder()
     .webClient(WebClient.create())
     .encoder(new JacksonEncoder(new ObjectMapper()))
-    //Ribbon load balancer
+    .setHystrixCommandSetterFactory(new DefaultSetterFactory())
+    .setFallback(new TestInterface() {
+        @Override
+        public Mono<String> get() {
+            return Mono.just("fallback");
+        }
+    })
     .setLoadBalancerCommand(
-            LoadBalancerCommand.builder()
-                    .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
-                    .build()
+         LoadBalancerCommand.builder()
+                 .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
+                 .withRetryHandler(new DefaultLoadBalancerRetryHandler(1, 1, true))
+                 .build()
     )
-    .target(TestInterface.class, "http://"+serviceName);
+    .target(TestInterface.class, "http://" + serviceName);
 
-/* Execute requests asynchronously */
+/* Execute nonblocking requests */
 Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();
 Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 ```

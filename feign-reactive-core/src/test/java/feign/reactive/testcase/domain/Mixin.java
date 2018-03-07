@@ -6,5 +6,5 @@ package feign.reactive.testcase.domain;
  * @author Alexei KLENIN
  */
 public enum Mixin {
-  COOKIES, MNMS, CHOCOLATE_SIROP, STRAWBERRY_SIROP, NUTS, RAINBOW
+    COOKIES, MNMS, CHOCOLATE_SIROP, STRAWBERRY_SIROP, NUTS, RAINBOW
 }

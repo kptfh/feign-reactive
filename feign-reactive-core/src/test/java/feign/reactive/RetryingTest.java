@@ -9,7 +9,10 @@ import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamServiceApi;
 import feign.reactive.testcase.domain.IceCreamOrder;
 import feign.reactive.testcase.domain.OrderGenerator;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -28,12 +31,12 @@ public class RetryingTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void resetServers(){
+    public void resetServers() {
         wireMockRule.resetAll();
     }
 
     @Test
-    public void testRetrying_success() throws JsonProcessingException {
+    public void shouldSuccessOnRetries() throws JsonProcessingException {
 
         IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
         String orderStr = TestUtils.MAPPER.writeValueAsString(orderGenerated);
@@ -48,7 +51,7 @@ public class RetryingTest {
                 .webClient(WebClient.create())
                 //encodes body and parameters
                 .encoder(new JacksonEncoder(TestUtils.MAPPER))
-                .target(IcecreamServiceApi.class, "http://localhost:"+wireMockRule.port());
+                .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
         IceCreamOrder order = client.findOrder(1)
                 .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
@@ -59,10 +62,10 @@ public class RetryingTest {
     }
 
     private static void mockResponseAfterSeveralAttempts(WireMockClassRule rule, int failedAttemptsNo, String scenario, String url,
-                                                  ResponseDefinitionBuilder response){
+                                                         ResponseDefinitionBuilder response) {
         String state = STARTED;
-        for(int attempt = 0; attempt < failedAttemptsNo; attempt++){
-            String nextState = "attempt"+attempt;
+        for (int attempt = 0; attempt < failedAttemptsNo; attempt++) {
+            String nextState = "attempt" + attempt;
             rule.stubFor(get(urlEqualTo(url))
                     .withHeader("Accept", equalTo("application/json"))
                     .inScenario(scenario)
@@ -83,7 +86,7 @@ public class RetryingTest {
     }
 
     @Test
-    public void testRetrying_noMoreAttempts() {
+    public void shouldFailAsNoMoreRetries() {
 
         expectedException.expect(FeignException.class);
         expectedException.expectMessage(containsString("status 503"));
@@ -100,7 +103,7 @@ public class RetryingTest {
                 .webClient(WebClient.create())
                 //encodes body and parameters
                 .encoder(new JacksonEncoder(TestUtils.MAPPER))
-                .target(IcecreamServiceApi.class, "http://localhost:"+wireMockRule.port());
+                .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
         client.findOrder(1)
                 .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))

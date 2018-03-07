@@ -27,13 +27,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static com.netflix.client.ClientFactory.getNamedLoadBalancer;
-import static com.netflix.client.config.CommonClientConfigKey.NFLoadBalancerClassName;
 import static com.netflix.config.ConfigurationManager.getConfigInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.isA;
 
 
-public class CloudLoadBalancingReactiveHttpClientTest {
+public class LoadBalancingReactiveHttpClientTest {
 
     @ClassRule
     public static WireMockClassRule server1 = new WireMockClassRule(wireMockConfig().dynamicPort());
@@ -46,19 +45,19 @@ public class CloudLoadBalancingReactiveHttpClientTest {
     private static String serviceName = "LoadBalancingTargetTest-loadBalancingDefaultPolicyRoundRobin";
 
     @Before
-    public void resetServers(){
+    public void resetServers() {
         server1.resetAll();
         server2.resetAll();
     }
 
     @Test
-    public void loadBalancingDefaultPolicy() throws IOException, InterruptedException {
+    public void shouldLoadBalanceRequests() throws IOException, InterruptedException {
         String body = "success!";
         mockSuccess(server1, body);
         mockSuccess(server2, body);
 
         String serverListKey = serviceName + ".ribbon.listOfServers";
-        getConfigInstance().setProperty(serverListKey, "localhost:"+server1.port() + "," + "localhost:"+server2.port());
+        getConfigInstance().setProperty(serverListKey, "localhost:" + server1.port() + "," + "localhost:" + server2.port());
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
@@ -69,7 +68,7 @@ public class CloudLoadBalancingReactiveHttpClientTest {
                                 .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
                                 .build()
                 )
-                .target(TestInterface.class, "http://"+serviceName);
+                .target(TestInterface.class, "http://" + serviceName);
 
         try {
 
@@ -88,46 +87,43 @@ public class CloudLoadBalancingReactiveHttpClientTest {
     }
 
     @Test
-    public void loadBalancingWithNoRetry() throws IOException, InterruptedException {
+    public void shouldFailAsPolicyWoRetries() throws IOException, InterruptedException {
 
         expectedException.expect(feign.RetryableException.class);
 
         try {
             loadBalancingWithRetry(2, 0, 0);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             assertThat(server1.getAllServeEvents().size() == 1
-                       ^  server2.getAllServeEvents().size() == 1);
+                    ^ server2.getAllServeEvents().size() == 1);
             throw t;
         }
     }
 
     @Test
-    public void loadBalancingWithRetryOnSame() throws IOException, InterruptedException {
+    public void shouldRetryOnSameAndFail() throws IOException, InterruptedException {
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectCause(isA(ClientException.class));
 
         try {
             loadBalancingWithRetry(2, 1, 0);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             assertThat(server1.getAllServeEvents().size() == 2
-                     ^ server2.getAllServeEvents().size() == 2);
+                    ^ server2.getAllServeEvents().size() == 2);
             throw t;
         }
     }
 
     @Test
-    public void loadBalancingWithRetryOnNext() throws IOException, InterruptedException {
+    public void shouldRetryOnNextAndFail() throws IOException, InterruptedException {
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectCause(isA(ClientException.class));
 
         try {
             loadBalancingWithRetry(2, 1, 1);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             assertThat(server1.getAllServeEvents().size() == 2
                     && server2.getAllServeEvents().size() == 2);
             throw t;
@@ -135,7 +131,7 @@ public class CloudLoadBalancingReactiveHttpClientTest {
     }
 
     @Test
-    public void loadBalancingWithRetryAndSuccess() throws IOException, InterruptedException {
+    public void shouldRetryOnSameAndSuccess() throws IOException, InterruptedException {
 
         loadBalancingWithRetry(2, 2, 0);
 
@@ -147,7 +143,8 @@ public class CloudLoadBalancingReactiveHttpClientTest {
     private void loadBalancingWithRetry(int failedAttemptsNo, int retryOnSame, int retryOnNext) throws IOException, InterruptedException {
         String body = "success!";
         Stream.of(server1, server2).forEach(server -> {
-            mockSuccessAfterSeveralAttempts(server, failedAttemptsNo, "/",
+            mockSuccessAfterSeveralAttempts(server, "/",
+                    failedAttemptsNo, 503,
                     aResponse()
                             .withStatus(200)
                             .withHeader("Content-Type", "application/json")
@@ -155,7 +152,7 @@ public class CloudLoadBalancingReactiveHttpClientTest {
         });
 
         String serverListKey = serviceName + ".ribbon.listOfServers";
-        getConfigInstance().setProperty(serverListKey, "localhost:"+server1.port() + "," + "localhost:"+server2.port());
+        getConfigInstance().setProperty(serverListKey, "localhost:" + server1.port() + "," + "localhost:" + server2.port());
 
         RetryHandler retryHandler = new RequestSpecificRetryHandler(true, true,
                 new DefaultLoadBalancerRetryHandler(retryOnSame, retryOnNext, true), null);
@@ -170,7 +167,7 @@ public class CloudLoadBalancingReactiveHttpClientTest {
                                 .withRetryHandler(retryHandler)
                                 .build()
                 )
-                .target(TestInterface.class, "http://"+serviceName);
+                .target(TestInterface.class, "http://" + serviceName);
 
         try {
 
@@ -181,7 +178,7 @@ public class CloudLoadBalancingReactiveHttpClientTest {
         }
     }
 
-    private void mockSuccess(WireMockClassRule server, String body){
+    static void mockSuccess(WireMockClassRule server, String body) {
         server.stubFor(get(urlEqualTo("/"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -189,16 +186,16 @@ public class CloudLoadBalancingReactiveHttpClientTest {
                         .withBody(body)));
     }
 
-    private static void mockSuccessAfterSeveralAttempts(WireMockClassRule server, int failedAttemptsNo, String url,
-                                                         ResponseDefinitionBuilder response){
+    static void mockSuccessAfterSeveralAttempts(WireMockClassRule server, String url,
+                                                int failedAttemptsNo, int errorCode, ResponseDefinitionBuilder response) {
         String state = STARTED;
-        for(int attempt = 0; attempt < failedAttemptsNo; attempt++){
-            String nextState = "attempt"+attempt;
+        for (int attempt = 0; attempt < failedAttemptsNo; attempt++) {
+            String nextState = "attempt" + attempt;
             server.stubFor(get(urlEqualTo(url))
                     .inScenario("testScenario")
                     .whenScenarioStateIs(state)
                     .willReturn(aResponse()
-                            .withStatus(503)
+                            .withStatus(errorCode)
                             .withHeader("Retry-After", "1"))
                     .willSetStateTo(nextState));
 

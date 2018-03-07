@@ -33,11 +33,11 @@ public class Logger {
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(ReactiveClientMethodHandler.class);
 
     public void logRequest(String feignMethodTag, Request request) {
-        if(logger.isDebugEnabled()){
+        if (logger.isDebugEnabled()) {
             logger.debug("[{}]--->{} {} HTTP/1.1", feignMethodTag, request.method(), request.url());
         }
 
-        if(logger.isTraceEnabled()){
+        if (logger.isTraceEnabled()) {
             logger.trace("[{}] REQUEST HEADERS\n{}",
                     feignMethodTag,
                     msg(() -> request.headers().entrySet().stream()
@@ -51,7 +51,7 @@ public class Logger {
     }
 
     public void logResponseHeaders(String feignMethodTag, HttpHeaders httpHeaders) {
-        if(logger.isTraceEnabled()) {
+        if (logger.isTraceEnabled()) {
             logger.trace("[{}] RESPONSE HEADERS\n{}",
                     feignMethodTag,
                     msg(() -> httpHeaders.entrySet().stream()
@@ -61,17 +61,17 @@ public class Logger {
     }
 
     public void logResponse(String feignMethodTag, Object response, long elapsedTime) {
-        if(logger.isTraceEnabled()){
+        if (logger.isTraceEnabled()) {
             logger.debug("[{}]<---{}", feignMethodTag, response);
         }
 
-        if(logger.isDebugEnabled()){
+        if (logger.isDebugEnabled()) {
             logger.debug("[{}]<--- takes {} milliseconds", feignMethodTag, elapsedTime);
         }
     }
 
     public void logRetry(String feignMethodTag) {
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug("[{}]---> RETRYING", feignMethodTag);
         }
     }

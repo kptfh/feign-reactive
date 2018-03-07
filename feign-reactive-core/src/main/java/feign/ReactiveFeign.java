@@ -103,7 +103,6 @@ public class ReactiveFeign {
          * {@link ReactiveDelegatingContract}
          *
          * @param contract contract.
-         *
          * @return this builder
          */
         public Builder<T> contract(final Contract contract) {
@@ -115,7 +114,6 @@ public class ReactiveFeign {
          * Sets encoder.
          *
          * @param encoder encoder
-         *
          * @return this builder
          */
         public Builder<T> encoder(final Encoder encoder) {
@@ -127,11 +125,11 @@ public class ReactiveFeign {
          * This flag indicates that the {@link #decoder(Decoder) decoder} should
          * process responses with 404 status, specifically returning null or empty
          * instead of throwing {@link FeignException}.
-         *
+         * <p>
          * <p>All first-party (ex gson) decoders return well-known empty values
          * defined by {@link Util#emptyValueOf}. To customize further, wrap an
          * existing {@link #decoder(Decoder) decoder} or make your own.
-         *
+         * <p>
          * <p>This flag only works with 404, as opposed to all or arbitrary status
          * codes. This was an explicit decision: 404 - empty is safe, common and
          * doesn't complicate redirection, retry or fallback policy.
@@ -147,7 +145,6 @@ public class ReactiveFeign {
          * Sets error decoder.
          *
          * @param errorDecoder error deoceder
-         *
          * @return this builder
          */
         public Builder<T> errorDecoder(final ErrorDecoder errorDecoder) {
@@ -159,7 +156,6 @@ public class ReactiveFeign {
          * Sets request options using Feign {@link Request.Options}
          *
          * @param options Feign {@code Request.Options} object
-         *
          * @return this builder
          */
         public Builder<T> options(final Request.Options options) {
@@ -182,11 +178,10 @@ public class ReactiveFeign {
          * Defines target and builds client.
          *
          * @param apiType API interface
-         * @param url base URL
-         *
+         * @param url     base URL
          * @return built client
          */
-         public T target(final Class<T> apiType, final String url) {
+        public T target(final Class<T> apiType, final String url) {
             return target(new Target.HardCodedTarget<>(apiType, url));
         }
 
@@ -194,10 +189,9 @@ public class ReactiveFeign {
          * Defines target and builds client.
          *
          * @param target target instance
-         *
          * @return built client
          */
-         public T target(final Target<T> target) {
+        public T target(final Target<T> target) {
             return build().newInstance(target);
         }
 

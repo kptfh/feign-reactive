@@ -25,8 +25,8 @@ public class ReactiveClientMethodHandler implements ReactiveMethodHandler {
     private ReactiveClientMethodHandler(
             Target target, Function<Object[], RequestTemplate> buildTemplateFromArgs,
             ReactiveClient reactiveClient) {
-        this.target = checkNotNull(target,"target must be not null");
-        this.buildTemplateFromArgs = checkNotNull(buildTemplateFromArgs,"buildTemplateFromArgs must be not null");
+        this.target = checkNotNull(target, "target must be not null");
+        this.buildTemplateFromArgs = checkNotNull(buildTemplateFromArgs, "buildTemplateFromArgs must be not null");
         this.reactiveClient = checkNotNull(reactiveClient, "client must be not null");
 
     }
@@ -43,7 +43,7 @@ public class ReactiveClientMethodHandler implements ReactiveMethodHandler {
         return reactiveClient.executeRequest(request);
     }
 
-    public static class Factory implements ReactiveMethodHandlerFactory{
+    public static class Factory implements ReactiveMethodHandlerFactory {
         private final Encoder encoder;
         private final ReactiveClientFactory reactiveClientFactory;
 

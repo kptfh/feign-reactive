@@ -1,6 +1,5 @@
 package feign.reactive.client;
 
-import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.MethodMetadata;
@@ -19,7 +18,7 @@ import java.net.URI;
 /**
  * @author Sergii Karpenko
  */
-public class RibbonReactiveClient implements ReactiveClient{
+public class RibbonReactiveClient implements ReactiveClient {
 
     private LoadBalancerCommand<Object> loadBalancerCommand;
     private ReactiveClient reactiveClient;
@@ -27,7 +26,7 @@ public class RibbonReactiveClient implements ReactiveClient{
 
     public RibbonReactiveClient(MethodMetadata metadata,
                                 @Nullable
-                                LoadBalancerCommand<Object> loadBalancerCommand,
+                                        LoadBalancerCommand<Object> loadBalancerCommand,
                                 ReactiveClient reactiveClient) {
         this.loadBalancerCommand = loadBalancerCommand;
         this.reactiveClient = reactiveClient;
@@ -38,7 +37,7 @@ public class RibbonReactiveClient implements ReactiveClient{
     @Override
     public Publisher<Object> executeRequest(Request request) {
 
-        if(loadBalancerCommand != null){
+        if (loadBalancerCommand != null) {
             Observable<Object> observable = loadBalancerCommand.submit(server -> {
 
                 Request lbRequest = loadBalanceRequest(request, server);

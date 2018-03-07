@@ -19,12 +19,12 @@ import static reactor.core.publisher.Mono.just;
  * @author Sergii Karpenko
  */
 @RestController
-public class IcecreamController implements IcecreamServiceApi{
+public class IcecreamController implements IcecreamServiceApi {
 
     private OrderGenerator generator = new OrderGenerator();
     private Map<Integer, IceCreamOrder> orders;
 
-    IcecreamController(){
+    IcecreamController() {
         orders = generator.generateRange(10).stream().collect(Collectors.toMap(
                 IceCreamOrder::getId, o -> o
         ));

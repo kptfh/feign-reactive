@@ -14,58 +14,58 @@ import java.util.stream.IntStream;
  * @author Alexei KLENIN
  */
 public class OrderGenerator {
-  private static final int[] BALLS_NUMBER = {1, 3, 5, 7};
-  private static final int[] MIXIN_NUMBER = { 1, 2, 3 };
+    private static final int[] BALLS_NUMBER = {1, 3, 5, 7};
+    private static final int[] MIXIN_NUMBER = {1, 2, 3};
 
-  private static final Random random = new Random();
+    private static final Random random = new Random();
 
-  public IceCreamOrder generate(int id) {
-    final IceCreamOrder order = new IceCreamOrder(id);
-    final int nbBalls = peekBallsNumber();
-    final int nbMixins = peekMixinNumber();
+    public IceCreamOrder generate(int id) {
+        final IceCreamOrder order = new IceCreamOrder(id);
+        final int nbBalls = peekBallsNumber();
+        final int nbMixins = peekMixinNumber();
 
-    IntStream
-        .rangeClosed(1, nbBalls)
-        .mapToObj(i -> this.peekFlavor())
-        .forEach(order::addBall);
+        IntStream
+                .rangeClosed(1, nbBalls)
+                .mapToObj(i -> this.peekFlavor())
+                .forEach(order::addBall);
 
-    IntStream
-        .rangeClosed(1, nbMixins)
-        .mapToObj(i -> this.peekMixin())
-        .forEach(order::addMixin);
+        IntStream
+                .rangeClosed(1, nbMixins)
+                .mapToObj(i -> this.peekMixin())
+                .forEach(order::addMixin);
 
-    return order;
-  }
+        return order;
+    }
 
-  public Collection<IceCreamOrder> generateRange(int n) {
-    Instant now = Instant.now();
+    public Collection<IceCreamOrder> generateRange(int n) {
+        Instant now = Instant.now();
 
-    List<Instant> orderTimestamps = IntStream
-        .range(0, n)
-        .mapToObj(minutes -> now.minus(minutes, ChronoUnit.MINUTES))
-        .collect(Collectors.toList());
+        List<Instant> orderTimestamps = IntStream
+                .range(0, n)
+                .mapToObj(minutes -> now.minus(minutes, ChronoUnit.MINUTES))
+                .collect(Collectors.toList());
 
-    return IntStream
-        .range(0, n)
-        .mapToObj(i -> this
-            .generate(i)
-            .withOrderTimestamp(orderTimestamps.get(i)))
-        .collect(Collectors.toList());
-  }
+        return IntStream
+                .range(0, n)
+                .mapToObj(i -> this
+                        .generate(i)
+                        .withOrderTimestamp(orderTimestamps.get(i)))
+                .collect(Collectors.toList());
+    }
 
-  private int peekBallsNumber() {
-    return BALLS_NUMBER[random.nextInt(BALLS_NUMBER.length)];
-  }
+    private int peekBallsNumber() {
+        return BALLS_NUMBER[random.nextInt(BALLS_NUMBER.length)];
+    }
 
-  private int peekMixinNumber() {
-    return MIXIN_NUMBER[random.nextInt(MIXIN_NUMBER.length)];
-  }
+    private int peekMixinNumber() {
+        return MIXIN_NUMBER[random.nextInt(MIXIN_NUMBER.length)];
+    }
 
-  private Flavor peekFlavor() {
-    return Flavor.values()[random.nextInt(Flavor.values().length)];
-  }
+    private Flavor peekFlavor() {
+        return Flavor.values()[random.nextInt(Flavor.values().length)];
+    }
 
-  private Mixin peekMixin() {
-    return Mixin.values()[random.nextInt(Mixin.values().length)];
-  }
+    private Mixin peekMixin() {
+        return Mixin.values()[random.nextInt(Mixin.values().length)];
+    }
 }

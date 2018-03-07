@@ -67,7 +67,7 @@ public class WebReactiveClient implements ReactiveClient {
                         (key, value) -> httpHeaders.put(key, (List<String>) value)))
                 .body(request.body() != null ? BodyInserters.fromObject(request.body()) : BodyInserters.empty())
                 .retrieve()
-                .onStatus( httpStatus -> decode404 && httpStatus == NOT_FOUND,
+                .onStatus(httpStatus -> decode404 && httpStatus == NOT_FOUND,
                         clientResponse -> null)
                 .onStatus(HttpStatus::isError,
                         clientResponse -> clientResponse.bodyToMono(ByteArrayResource.class)
@@ -87,7 +87,7 @@ public class WebReactiveClient implements ReactiveClient {
                     return null;
                 });
 
-        if (returnPublisherType == Mono.class){
+        if (returnPublisherType == Mono.class) {
             return response.bodyToMono(returnActualType)
                     .map(result -> {
                         logger.logResponse(methodTag, result, System.currentTimeMillis() - start);

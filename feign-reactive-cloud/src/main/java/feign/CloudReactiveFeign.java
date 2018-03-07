@@ -14,13 +14,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.function.Function;
 
+import static java.util.Optional.ofNullable;
+
 /**
  * Allows to specify ribbon {@link LoadBalancerCommand}
- *  and HystrixObservableCommand.Setter.
+ * and HystrixObservableCommand.Setter.
  *
  * @author Sergii Karpenko
  */
-public class CloudReactiveFeign extends ReactiveFeign{
+public class CloudReactiveFeign extends ReactiveFeign {
 
     private CloudReactiveFeign(ReactiveFeign.ParseHandlersByName targetToHandlersByName, InvocationHandlerFactory factory) {
         super(targetToHandlersByName, factory);
@@ -32,13 +34,7 @@ public class CloudReactiveFeign extends ReactiveFeign{
 
     public static class Builder<T> extends ReactiveFeign.Builder<T> {
 
-        private SetterFactory commandSetterFactory = (target, methodMetadata) -> {
-            String groupKey = target.name();
-            String commandKey = methodMetadata.configKey();
-            return HystrixObservableCommand.Setter
-                    .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
-                    .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
-        };
+        private SetterFactory commandSetterFactory;
         private Function<Throwable, ? extends T> fallbackFactory;
         private LoadBalancerCommand<Object> loadBalancerCommand;
 
@@ -65,10 +61,10 @@ public class CloudReactiveFeign extends ReactiveFeign{
         @Override
         protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
             ReactiveMethodHandlerFactory reactiveMethodHandlerFactory = super.buildReactiveMethodHandlerFactory();
-            return commandSetterFactory != null
+            return commandSetterFactory != null || fallbackFactory != null
                     ? new HystrixMethodHandler.Factory(
                     reactiveMethodHandlerFactory,
-                    commandSetterFactory,
+                    ofNullable(commandSetterFactory).orElse(new DefaultSetterFactory()),
                     (Function<Throwable, Object>) fallbackFactory)
                     : reactiveMethodHandlerFactory;
         }
@@ -85,7 +81,7 @@ public class CloudReactiveFeign extends ReactiveFeign{
         }
 
         @Override
-        public Builder<T> webClient(final WebClient webClient){
+        public Builder<T> webClient(final WebClient webClient) {
             super.webClient(webClient);
             return this;
         }
@@ -123,6 +119,17 @@ public class CloudReactiveFeign extends ReactiveFeign{
 
     public interface SetterFactory {
         HystrixObservableCommand.Setter create(Target<?> target, MethodMetadata methodMetadata);
+    }
+
+    public static class DefaultSetterFactory implements SetterFactory {
+        @Override
+        public HystrixObservableCommand.Setter create(Target<?> target, MethodMetadata methodMetadata) {
+            String groupKey = target.name();
+            String commandKey = methodMetadata.configKey();
+            return HystrixObservableCommand.Setter
+                    .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
+                    .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
+        }
     }
 
 }

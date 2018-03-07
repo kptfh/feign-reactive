@@ -12,14 +12,14 @@ import java.util.function.Function;
 
 public class ReactiveRetryers {
 
-    public static Function<Flux<Throwable>, Publisher<?>> retryWithDelay(int maxAttempts, long period){
+    public static Function<Flux<Throwable>, Publisher<?>> retryWithDelay(int maxAttempts, long period) {
         return companion -> companion
                 .zipWith(Flux.range(1, maxAttempts), (error, index) -> {
                     if (index < maxAttempts) {
 
                         long delay;
                         Date retryAfter;
-                        if (error instanceof RetryableException && (retryAfter = ((RetryableException)error).retryAfter()) != null) {
+                        if (error instanceof RetryableException && (retryAfter = ((RetryableException) error).retryAfter()) != null) {
                             delay = retryAfter.getTime() - System.currentTimeMillis();
                             delay = Math.min(delay, period);
                             delay = Math.max(delay, 0);
@@ -28,8 +28,7 @@ public class ReactiveRetryers {
                         }
 
                         return Mono.delay(Duration.ofMillis(delay));
-                    }
-                    else throw Exceptions.propagate(error);
+                    } else throw Exceptions.propagate(error);
                 });
     }
 

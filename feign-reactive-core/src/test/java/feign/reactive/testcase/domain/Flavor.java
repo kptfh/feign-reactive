@@ -6,5 +6,5 @@ package feign.reactive.testcase.domain;
  * @author Alexei KLENIN
  */
 public enum Flavor {
-  STRAWBERRY, CHOCOLATE, BANANA, PISTACHIO, MELON, VANILLA
+    STRAWBERRY, CHOCOLATE, BANANA, PISTACHIO, MELON, VANILLA
 }

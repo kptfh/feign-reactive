@@ -28,72 +28,73 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableAutoConfiguration
 public class ReactiveHttpOptionsTest {
 
-  private WebClient webClient = WebClient.create();
+    private WebClient webClient = WebClient.create();
 
-  @Autowired
-  private IcecreamController icecreamController;
+    @Autowired
+    private IcecreamController icecreamController;
 
-  @LocalServerPort
-  private int port;
+    @LocalServerPort
+    private int port;
 
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
-  private String targetUrl;
+    private String targetUrl;
 
-  @Before
-  public void setUp(){
-    targetUrl = "http://localhost:" + port;
-  }
+    @Before
+    public void setUp() {
+        targetUrl = "http://localhost:" + port;
+    }
 
-  /**
-   * Test the ReactiveOptions version of the Reactive Feign Client.
-   * This is useful for use-cases like HTTPS/2 or gzip compressed responses.
-   */
-  @Test
-  public void testReactiveOptions() {
+    /**
+     * Test the ReactiveOptions version of the Reactive Feign Client.
+     * This is useful for use-cases like HTTPS/2 or gzip compressed responses.
+     */
+    @Test
+    public void testReactiveOptions() {
 
-    ReactiveOptions options = new ReactiveOptions(
-            5000, 5000, true
-    );
+        ReactiveOptions options = new ReactiveOptions(
+                5000, 5000, true
+        );
 
-    IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
-            .webClient(webClient)
-            .options(options)
-            //encodes body and parameters
-            .encoder(new JacksonEncoder(TestUtils.MAPPER))
-            .target(IcecreamServiceApi.class, targetUrl);
+        IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
+                .webClient(webClient)
+                .options(options)
+                //encodes body and parameters
+                .encoder(new JacksonEncoder(TestUtils.MAPPER))
+                .target(IcecreamServiceApi.class, targetUrl);
 
-    testClient(client);
-  }
-
-
-  /**
-   * Test the Feign Request Options version of the Vert.x Feign Client.
-   * This proves regression is not broken for existing use-cases.
-   */
-  @Test
-  public void testRequestOptions() {
-
-      // Plain old Feign Request.Options (regression)
-      Request.Options options = new Request.Options(5000,5000);
-
-      IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
-              .webClient(webClient)
-              .options(options)
-              //encodes body and parameters
-              .encoder(new JacksonEncoder(TestUtils.MAPPER))
-              .target(IcecreamServiceApi.class, targetUrl);
-
-    testClient(client);
-  }
+        testClient(client);
+    }
 
 
-  /**
-   * Test the provided client for the correct results
-   * @param client Feign client instance
-   */
-  private void testClient(IcecreamServiceApi client) {
-    client.getAvailableFlavors().collectList().block();
-  }
+    /**
+     * Test the Feign Request Options version of the Vert.x Feign Client.
+     * This proves regression is not broken for existing use-cases.
+     */
+    @Test
+    public void testRequestOptions() {
+
+        // Plain old Feign Request.Options (regression)
+        Request.Options options = new Request.Options(5000, 5000);
+
+        IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
+                .webClient(webClient)
+                .options(options)
+                //encodes body and parameters
+                .encoder(new JacksonEncoder(TestUtils.MAPPER))
+                .target(IcecreamServiceApi.class, targetUrl);
+
+        testClient(client);
+    }
+
+
+    /**
+     * Test the provided client for the correct results
+     *
+     * @param client Feign client instance
+     */
+    private void testClient(IcecreamServiceApi client) {
+        client.getAvailableFlavors().collectList().block();
+    }
 }

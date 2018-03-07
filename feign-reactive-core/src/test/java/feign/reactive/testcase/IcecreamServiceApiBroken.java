@@ -21,17 +21,19 @@ import java.util.Collection;
  */
 public interface IcecreamServiceApiBroken {
 
-  @RequestLine("GET /icecream/flavors")
-  Mono<Collection<Flavor>> getAvailableFlavors();
+    @RequestLine("GET /icecream/flavors")
+    Mono<Collection<Flavor>> getAvailableFlavors();
 
-  @RequestLine("GET /icecream/mixins")
-  Mono<Collection<Mixin>> getAvailableMixins();
+    @RequestLine("GET /icecream/mixins")
+    Mono<Collection<Mixin>> getAvailableMixins();
 
-  @RequestLine("POST /icecream/orders")
-  @Headers("Content-Type: application/json")
-  Mono<Bill> makeOrder(IceCreamOrder order);
+    @RequestLine("POST /icecream/orders")
+    @Headers("Content-Type: application/json")
+    Mono<Bill> makeOrder(IceCreamOrder order);
 
-  /** Method that doesn't respects contract. */
-  @RequestLine("GET /icecream/orders/{orderId}")
-  IceCreamOrder findOrder(@Param("orderId") int orderId);
+    /**
+     * Method that doesn't respects contract.
+     */
+    @RequestLine("GET /icecream/orders/{orderId}")
+    IceCreamOrder findOrder(@Param("orderId") int orderId);
 }

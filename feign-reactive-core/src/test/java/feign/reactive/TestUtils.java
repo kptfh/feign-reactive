@@ -1,6 +1,5 @@
 package feign.reactive;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -10,8 +9,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * @author Alexei KLENIN
  */
 class TestUtils {
-  static final ObjectMapper MAPPER = new ObjectMapper();
-  static {
-    MAPPER.registerModule(new JavaTimeModule());
-  }
+    static final ObjectMapper MAPPER = new ObjectMapper();
+
+    static {
+        MAPPER.registerModule(new JavaTimeModule());
+    }
 }

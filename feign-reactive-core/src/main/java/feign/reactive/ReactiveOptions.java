@@ -9,7 +9,7 @@ public class ReactiveOptions extends Request.Options {
 
     private boolean tryUseCompression;
 
-    public ReactiveOptions(int connectTimeoutMillis, int readTimeoutMillis){
+    public ReactiveOptions(int connectTimeoutMillis, int readTimeoutMillis) {
         this(connectTimeoutMillis, readTimeoutMillis, false);
     }
 

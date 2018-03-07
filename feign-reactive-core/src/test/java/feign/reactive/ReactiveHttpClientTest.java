@@ -48,7 +48,7 @@ public class ReactiveHttpClientTest {
     private String targetUrl;
 
     @Before
-    public void setUp(){
+    public void setUp() {
         targetUrl = "http://localhost:" + port;
         client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(webClient)
@@ -83,45 +83,44 @@ public class ReactiveHttpClientTest {
         assertThat(!orderOptional.isPresent());
     }
 
-  @Test
-  public void testMakeOrder_success() {
+    @Test
+    public void testMakeOrder_success() {
 
-    IceCreamOrder order = new OrderGenerator().generate(20);
+        IceCreamOrder order = new OrderGenerator().generate(20);
 
-    Bill bill = client.makeOrder(order).block();
-    assertThat(bill).isEqualToComparingFieldByField(Bill.makeBill(order));
-  }
+        Bill bill = client.makeOrder(order).block();
+        assertThat(bill).isEqualToComparingFieldByField(Bill.makeBill(order));
+    }
 
 
+    @Test
+    public void testPayBill_success() {
 
-  @Test
-  public void testPayBill_success() {
+        Bill bill = Bill.makeBill(new OrderGenerator().generate(30));
 
-    Bill bill = Bill.makeBill(new OrderGenerator().generate(30));
+        client.payBill(bill).block();
+    }
 
-    client.payBill(bill).block();
-  }
+    @Test
+    public void testInstantiationContract_forgotProvideWebClient() {
 
-  @Test
-  public void testInstantiationContract_forgotProvideWebClient() {
+        expectedException.expect(NullPointerException.class);
+        expectedException.expectMessage(
+                "WebClient instance wasn't provided in ReactiveFeign builder");
 
-    expectedException.expect(NullPointerException.class);
-    expectedException.expectMessage(
-        "WebClient instance wasn't provided in ReactiveFeign builder");
+        ReactiveFeign.<IcecreamServiceApi>builder()
+                .target(IcecreamServiceApi.class, targetUrl);
+    }
 
-    ReactiveFeign.<IcecreamServiceApi>builder()
-        .target(IcecreamServiceApi.class, targetUrl);
-  }
+    @Test
+    public void testInstantiationBrokenContract_throwsException() {
 
-  @Test
-  public void testInstantiationBrokenContract_throwsException() {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(
+                containsString("IcecreamServiceApiBroken#findOrder(int)"));
 
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-            containsString("IcecreamServiceApiBroken#findOrder(int)"));
-
-    ReactiveFeign.<IcecreamServiceApiBroken>builder()
-        .webClient(webClient)
-        .target(IcecreamServiceApiBroken.class, targetUrl);
-  }
+        ReactiveFeign.<IcecreamServiceApiBroken>builder()
+                .webClient(webClient)
+                .target(IcecreamServiceApiBroken.class, targetUrl);
+    }
 }
