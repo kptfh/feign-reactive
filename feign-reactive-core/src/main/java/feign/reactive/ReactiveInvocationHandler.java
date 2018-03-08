@@ -4,7 +4,6 @@ import feign.InvocationHandlerFactory;
 import feign.InvocationHandlerFactory.MethodHandler;
 import feign.Target;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationHandler;
@@ -63,17 +62,6 @@ public final class ReactiveInvocationHandler implements InvocationHandler {
         } catch (Throwable throwable) {
             return Mono.error(throwable);
         }
-    }
-
-    /**
-     * Checks if method must return {@link Mono} or {@link Flux}.
-     *
-     * @param method invoked method
-     * @return true if method returns {@link Mono} or {@link Flux}, false if not
-     */
-    private boolean isReturnsMonoOrFlux(final Method method) {
-        return Mono.class.isAssignableFrom(method.getReturnType())
-                || Flux.class.isAssignableFrom(method.getReturnType());
     }
 
     @Override

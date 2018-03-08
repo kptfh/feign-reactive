@@ -57,7 +57,7 @@ public class WebReactiveClient implements ReactiveClient {
 
 
     @Override
-    public Publisher executeRequest(Request request) {
+    public Publisher<Object> executeRequest(Request request) {
         logger.logRequest(methodTag, request);
 
         long start = System.currentTimeMillis();
@@ -65,7 +65,11 @@ public class WebReactiveClient implements ReactiveClient {
                 .uri(request.url())
                 .headers(httpHeaders -> request.headers().forEach(
                         (key, value) -> httpHeaders.put(key, (List<String>) value)))
-                .body(request.body() != null ? BodyInserters.fromObject(request.body()) : BodyInserters.empty())
+                .body(
+                        //BodyInserters.fromPublisher(Mono.justOrEmpty(request.body()))
+                        request.body() != null
+                                ? BodyInserters.fromObject(request.body())
+                                : BodyInserters.empty())
                 .retrieve()
                 .onStatus(httpStatus -> decode404 && httpStatus == NOT_FOUND,
                         clientResponse -> null)

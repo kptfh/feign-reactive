@@ -10,6 +10,6 @@ public interface TestInterface {
     String VALUE_PARAMETER = "value";
 
     @RequestLine("GET /mirror?" + VALUE_PARAMETER + "={value}")
-    Mono<Integer> get(@Param("value") int valueToReturn);
+    Mono<Long> get(@Param("value") long valueToReturn);
 
 }
