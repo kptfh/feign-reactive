@@ -66,7 +66,6 @@ public class HystrixReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .encoder(new JacksonEncoder(new ObjectMapper()))
                 .setHystrixCommandSetterFactory(getSetterFactory(testNo))
                 .target(TestInterface.class, "http://localhost:" + server.port());
 
@@ -85,7 +84,6 @@ public class HystrixReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .encoder(new JacksonEncoder(new ObjectMapper()))
                 .setHystrixCommandSetterFactory(getSetterFactory(testNo))
                 .setFallback(new TestInterface() {
                     @Override
@@ -112,7 +110,6 @@ public class HystrixReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .encoder(new JacksonEncoder(new ObjectMapper()))
                 .setHystrixCommandSetterFactory(getSetterFactory(testNo))
                 .target(TestInterface.class, "http://localhost:" + server.port());
 

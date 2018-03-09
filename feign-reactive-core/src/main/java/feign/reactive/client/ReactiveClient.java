@@ -1,6 +1,5 @@
 package feign.reactive.client;
 
-import feign.Request;
 import org.reactivestreams.Publisher;
 
 /**
@@ -8,5 +7,5 @@ import org.reactivestreams.Publisher;
  */
 public interface ReactiveClient {
 
-    Publisher<Object> executeRequest(Request request);
+    Publisher<Object> executeRequest(ReactiveRequest request);
 }

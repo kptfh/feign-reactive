@@ -1,21 +1,15 @@
 package feign.reactive;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.ReactiveFeign;
-import feign.jackson.JacksonEncoder;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
-import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -24,7 +18,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Should check that client is not blocking
@@ -54,7 +47,6 @@ public class ReactiveFeignLoadTest {
         targetUrl = "http://localhost:" + port;
         client = ReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .encoder(new JacksonEncoder(new ObjectMapper()))
                 .target(TestInterface.class, targetUrl);
     }
 
@@ -67,7 +59,7 @@ public class ReactiveFeignLoadTest {
 
         long testStart = System.currentTimeMillis();
 
-        int callsNo = 100000;
+        int callsNo = 1000;
         CountDownLatch countDownLatch = new CountDownLatch(callsNo);
 
         for(int i = 0; i < callsNo; i++){
@@ -88,10 +80,10 @@ public class ReactiveFeignLoadTest {
         System.out.println("Time to post:"+timeToPost);
         System.out.println("Time to run:"+(System.currentTimeMillis() - testStart));
 
-        ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
-        for (ThreadInfo ti : threadMxBean.dumpAllThreads(true, true)) {
-            System.out.print(ti.toString());
-        }
+//        ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
+//        for (ThreadInfo ti : threadMxBean.dumpAllThreads(true, true)) {
+//            System.out.print(ti.toString());
+//        }
 
     }
 

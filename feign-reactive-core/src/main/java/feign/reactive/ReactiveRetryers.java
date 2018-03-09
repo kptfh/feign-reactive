@@ -10,6 +10,9 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.function.Function;
 
+/**
+ * @author Sergii Karpenko
+ */
 public class ReactiveRetryers {
 
     public static Function<Flux<Throwable>, Publisher<?>> retryWithDelay(int maxAttempts, long period) {

@@ -4,10 +4,9 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
-import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
-import feign.reactive.ReactiveMethodHandlerFactory;
 import feign.reactive.HystrixMethodHandler;
+import feign.reactive.ReactiveMethodHandlerFactory;
 import feign.reactive.client.ReactiveClient;
 import feign.reactive.client.ReactiveClientFactory;
 import feign.reactive.client.RibbonReactiveClient;
@@ -90,12 +89,6 @@ public class CloudReactiveFeign extends ReactiveFeign {
         @Override
         public Builder<T> contract(final Contract contract) {
             super.contract(contract);
-            return this;
-        }
-
-        @Override
-        public Builder<T> encoder(final Encoder encoder) {
-            super.encoder(encoder);
             return this;
         }
 

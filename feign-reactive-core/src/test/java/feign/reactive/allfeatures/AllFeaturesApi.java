@@ -1,6 +1,8 @@
 package feign.reactive.allfeatures;
 
 import feign.*;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -32,5 +34,31 @@ public interface AllFeaturesApi {
     @Headers({"Content-Type: application/json"})
     Mono<Map<String, String>> mirrorBodyMap(
             Map<String, String> body);
+
+    @RequestLine("POST " + "/mirrorBodyReactive")
+    @Headers({"Content-Type: application/json"})
+    Mono<String> mirrorBodyReactive(
+            Publisher<String> body);
+
+    @RequestLine("POST " + "/mirrorBodyMapReactive")
+    @Headers({"Content-Type: application/json"})
+    Mono<Map<String, String>> mirrorBodyMapReactive(
+            Publisher<Map<String, String>> body);
+
+    @RequestLine("POST " + "/mirrorBodyStream")
+    @Headers({"Content-Type: application/json"})
+    Flux<TestObject> mirrorBodyStream(
+            Publisher<TestObject> bodyStream);
+
+    class TestObject {
+
+        public String payload;
+
+        public TestObject() {}
+
+        public TestObject(String payload) {
+            this.payload = payload;
+        }
+    }
 
 }

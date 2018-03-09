@@ -1,14 +1,12 @@
 package feign.reactive.client;
 
 import feign.MethodMetadata;
-import feign.Request;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import feign.reactive.Logger;
 import org.reactivestreams.Publisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -21,6 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static feign.Util.resolveLastTypeParameter;
+import static java.util.Optional.ofNullable;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
@@ -34,6 +33,7 @@ public class WebReactiveClient implements ReactiveClient {
     private final ErrorDecoder errorDecoder;
     private final boolean decode404;
     private final Logger logger;
+    private final ParameterizedTypeReference<Object> bodyActualType;
     private final Type returnPublisherType;
     private final ParameterizedTypeReference<?> returnActualType;
 
@@ -50,6 +50,21 @@ public class WebReactiveClient implements ReactiveClient {
 
         this.methodTag = metadata.configKey().substring(0, metadata.configKey().indexOf('('));
         final Type returnType = metadata.returnType();
+
+        bodyActualType = ofNullable(metadata.bodyType()).map(type -> {
+            if(type instanceof ParameterizedType){
+                Class<?> returnBodyType = (Class<?>)((ParameterizedType) type).getRawType();
+                if((returnBodyType).isAssignableFrom(Publisher.class)) {
+                    return ParameterizedTypeReference.forType(
+                            resolveLastTypeParameter(returnType,  returnBodyType));
+                } else {
+                    return ParameterizedTypeReference.forType(type);
+                }
+            } else {
+                return ParameterizedTypeReference.forType(type);
+            }
+        }).orElse(null);
+
         returnPublisherType = ((ParameterizedType) returnType).getRawType();
         returnActualType = ParameterizedTypeReference.forType(
                 resolveLastTypeParameter(returnType, (Class<?>) returnPublisherType));
@@ -57,19 +72,17 @@ public class WebReactiveClient implements ReactiveClient {
 
 
     @Override
-    public Publisher<Object> executeRequest(Request request) {
+    public Publisher<Object> executeRequest(ReactiveRequest request) {
         logger.logRequest(methodTag, request);
 
         long start = System.currentTimeMillis();
-        WebClient.ResponseSpec response = webClient.method(HttpMethod.resolve(request.method()))
-                .uri(request.url())
+        WebClient.ResponseSpec response = webClient.method(request.method())
+                .uri(request.uri())
                 .headers(httpHeaders -> request.headers().forEach(
                         (key, value) -> httpHeaders.put(key, (List<String>) value)))
-                .body(
-                        //BodyInserters.fromPublisher(Mono.justOrEmpty(request.body()))
-                        request.body() != null
-                                ? BodyInserters.fromObject(request.body())
-                                : BodyInserters.empty())
+                .body(bodyActualType != null
+                        ? BodyInserters.fromPublisher(request.body(), bodyActualType)
+                        : BodyInserters.empty())
                 .retrieve()
                 .onStatus(httpStatus -> decode404 && httpStatus == NOT_FOUND,
                         clientResponse -> null)

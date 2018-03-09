@@ -1,10 +1,10 @@
 package feign.reactive.allfeatures;
 
-import feign.Param;
+import org.reactivestreams.Publisher;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Collections;
 import java.util.Map;
 
 import static reactor.core.publisher.Mono.just;
@@ -52,6 +52,27 @@ public class AllFeaturesController implements AllFeaturesApi{
     public Mono<Map<String, String>> mirrorBodyMap(
             @RequestBody Map<String, String> body) {
         return just(body);
+    }
+
+    @PostMapping(path = "/mirrorBodyReactive")
+    @Override
+    public Mono<String> mirrorBodyReactive(
+            @RequestBody Publisher<String> body) {
+        return Mono.from(body);
+    }
+
+    @PostMapping(path = "/mirrorBodyMapReactive")
+    @Override
+    public Mono<Map<String, String>> mirrorBodyMapReactive(
+            @RequestBody Publisher<Map<String, String>> body) {
+        return Mono.from(body);
+    }
+
+    @PostMapping(path = "/mirrorBodyStream")
+    @Override
+    public Flux<TestObject> mirrorBodyStream(
+            @RequestBody Publisher<TestObject> bodyStream) {
+        return Flux.from(bodyStream);
     }
 
 }

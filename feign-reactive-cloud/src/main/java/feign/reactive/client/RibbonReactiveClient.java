@@ -3,7 +3,6 @@ package feign.reactive.client;
 import com.netflix.loadbalancer.Server;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.MethodMetadata;
-import feign.Request;
 import org.reactivestreams.Publisher;
 import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
@@ -14,14 +13,15 @@ import rx.RxReactiveStreams;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * @author Sergii Karpenko
  */
 public class RibbonReactiveClient implements ReactiveClient {
 
-    private LoadBalancerCommand<Object> loadBalancerCommand;
-    private ReactiveClient reactiveClient;
+    private final LoadBalancerCommand<Object> loadBalancerCommand;
+    private final ReactiveClient reactiveClient;
     private final Type returnPublisherType;
 
     public RibbonReactiveClient(MethodMetadata metadata,
@@ -35,12 +35,12 @@ public class RibbonReactiveClient implements ReactiveClient {
     }
 
     @Override
-    public Publisher<Object> executeRequest(Request request) {
+    public Publisher<Object> executeRequest(ReactiveRequest request) {
 
         if (loadBalancerCommand != null) {
             Observable<Object> observable = loadBalancerCommand.submit(server -> {
 
-                Request lbRequest = loadBalanceRequest(request, server);
+                ReactiveRequest lbRequest = loadBalanceRequest(request, server);
 
                 return RxReactiveStreams.toObservable(reactiveClient.executeRequest(lbRequest));
             });
@@ -53,12 +53,14 @@ public class RibbonReactiveClient implements ReactiveClient {
         }
     }
 
-    Request loadBalanceRequest(Request request, Server server) {
-        URI asUri = URI.create(request.url());
-        String clientName = asUri.getHost();
-
-        String lbUrl = request.url().replaceFirst(clientName, server.getHostPort());
-
-        return Request.create(request.method(), lbUrl, request.headers(), request.body(), request.charset());
+    protected ReactiveRequest loadBalanceRequest(ReactiveRequest request, Server server) {
+        URI uri = request.uri();
+        try {
+            URI lbUrl = new URI(uri.getScheme(), uri.getUserInfo(), server.getHost(), server.getPort(),
+                    uri.getPath(), uri.getQuery(), uri.getFragment());
+            return new ReactiveRequest(request.method(), lbUrl, request.headers(), request.body());
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

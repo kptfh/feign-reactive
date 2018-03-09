@@ -2,13 +2,13 @@ package feign;
 
 import feign.InvocationHandlerFactory.MethodHandler;
 import feign.codec.Decoder;
-import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
 import feign.reactive.*;
 import feign.reactive.client.ReactiveClientFactory;
 import feign.reactive.client.WebReactiveClient;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import org.reactivestreams.Publisher;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -24,11 +24,13 @@ import static feign.Util.checkNotNull;
 import static feign.Util.isDefault;
 
 /**
- * Allows Feign interfaces to return reactive {@link Mono} or {@link Flux}.
+ * Allows Feign interfaces to accept {@link Publisher} as body
+ * and return reactive {@link Mono} or {@link Flux}.
  *
  * @author Sergii Karpenko
  */
 public class ReactiveFeign {
+
     private final ParseHandlersByName targetToHandlersByName;
     private final InvocationHandlerFactory factory;
 
@@ -81,7 +83,6 @@ public class ReactiveFeign {
         private final List<RequestInterceptor> requestInterceptors = new ArrayList<>();
         private Contract contract = new ReactiveDelegatingContract(new Contract.Default());
         private WebClient webClient;
-        private Encoder encoder = new Encoder.Default();
         private ErrorDecoder errorDecoder = new ErrorDecoder.Default();
         private InvocationHandlerFactory invocationHandlerFactory =
                 new ReactiveInvocationHandler.Factory();
@@ -104,17 +105,6 @@ public class ReactiveFeign {
          */
         public Builder<T> contract(final Contract contract) {
             this.contract = new ReactiveDelegatingContract(contract);
-            return this;
-        }
-
-        /**
-         * Sets encoder.
-         *
-         * @param encoder encoder
-         * @return this builder
-         */
-        public Builder<T> encoder(final Encoder encoder) {
-            this.encoder = encoder;
             return this;
         }
 
@@ -203,8 +193,7 @@ public class ReactiveFeign {
         }
 
         protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
-            return new ReactiveClientMethodHandler.Factory(
-                    encoder, buildReactiveClientFactory());
+            return new ReactiveClientMethodHandler.Factory(buildReactiveClientFactory());
         }
 
         protected ReactiveClientFactory buildReactiveClientFactory() {

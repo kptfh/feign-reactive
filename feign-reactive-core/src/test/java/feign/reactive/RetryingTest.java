@@ -52,8 +52,6 @@ public class RetryingTest {
 
         IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(WebClient.create())
-                //encodes body and parameters
-                .encoder(new JacksonEncoder(TestUtils.MAPPER))
                 .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
         IceCreamOrder order = client.findOrder(1)
@@ -104,8 +102,6 @@ public class RetryingTest {
 
         IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(WebClient.create())
-                //encodes body and parameters
-                .encoder(new JacksonEncoder(TestUtils.MAPPER))
                 .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
         client.findOrder(1)

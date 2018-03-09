@@ -15,7 +15,9 @@
  */
 package feign.reactive;
 
-import feign.Request;
+import feign.reactive.client.ReactiveRequest;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 
@@ -32,9 +34,9 @@ public class Logger {
 
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(ReactiveClientMethodHandler.class);
 
-    public void logRequest(String feignMethodTag, Request request) {
+    public void logRequest(String feignMethodTag, ReactiveRequest request) {
         if (logger.isDebugEnabled()) {
-            logger.debug("[{}]--->{} {} HTTP/1.1", feignMethodTag, request.method(), request.url());
+            logger.debug("[{}]--->{} {} HTTP/1.1", feignMethodTag, request.method(), request.uri());
         }
 
         if (logger.isTraceEnabled()) {
@@ -44,9 +46,22 @@ public class Logger {
                             .map(entry -> String.format("%s:%s", entry.getKey(), entry.getValue()))
                             .collect(Collectors.joining("\n"))));
 
-            logger.trace("[{}] REQUEST BODY\n{}",
-                    feignMethodTag,
-                    request.charset() != null ? new String(request.body(), request.charset()) : "Binary data");
+            request.body().subscribe(new Subscriber<Object>() {
+                @Override
+                public void onSubscribe(Subscription subscription) {}
+
+                @Override
+                public void onNext(Object body) {
+                    logger.trace("[{}] REQUEST BODY\n{}", feignMethodTag, body);
+                }
+
+                @Override
+                public void onError(Throwable throwable) {}
+
+                @Override
+                public void onComplete() {}
+            });
+
         }
     }
 

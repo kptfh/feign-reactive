@@ -56,8 +56,6 @@ public class ReactiveHttpClientTest {
         targetUrl = "http://localhost:" + port;
         client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(webClient)
-                //encodes body and parameters
-                .encoder(new JacksonEncoder(TestUtils.MAPPER))
                 .target(IcecreamServiceApi.class, targetUrl);
     }
 

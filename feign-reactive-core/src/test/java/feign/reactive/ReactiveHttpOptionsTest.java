@@ -62,8 +62,6 @@ public class ReactiveHttpOptionsTest {
         IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(webClient)
                 .options(options)
-                //encodes body and parameters
-                .encoder(new JacksonEncoder(TestUtils.MAPPER))
                 .target(IcecreamServiceApi.class, targetUrl);
 
         testClient(client);
@@ -84,7 +82,6 @@ public class ReactiveHttpOptionsTest {
                 .webClient(webClient)
                 .options(options)
                 //encodes body and parameters
-                .encoder(new JacksonEncoder(TestUtils.MAPPER))
                 .target(IcecreamServiceApi.class, targetUrl);
 
         testClient(client);

@@ -63,8 +63,6 @@ public class LoadBalancingReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                //encodes body and parameters
-                .encoder(new JacksonEncoder(new ObjectMapper()))
                 .setLoadBalancerCommand(
                         LoadBalancerCommand.builder()
                                 .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
@@ -161,8 +159,6 @@ public class LoadBalancingReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                //encodes body and parameters
-                .encoder(new JacksonEncoder(new ObjectMapper()))
                 .setLoadBalancerCommand(
                         LoadBalancerCommand.builder()
                                 .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
