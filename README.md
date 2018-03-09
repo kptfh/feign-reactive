@@ -13,8 +13,9 @@ non-blocking HTTP client of Spring WebClient.
 
 ## Usage
 
-Write Feign API as usual, but every method of interface must return
-`reactor.core.publisher.Mono or reactor.core.publisher.Flux`.
+Write Feign API as usual, but every method of interface
+ - may accept `org.reactivestreams.Publisher` as body
+ - must return `reactor.core.publisher.Mono` or `reactor.core.publisher.Flux`.
 
 ```java
 @Headers({ "Accept: application/json" })
@@ -35,7 +36,7 @@ public interface IcecreamServiceApi {
 
   @RequestLine("POST /icecream/bills/pay")
   @Headers("Content-Type: application/json")
-  Mono<Void> payBill(Bill bill);
+  Mono<Void> payBill(Publisher<Bill> bill);
 }
 ```
 Build the client :
