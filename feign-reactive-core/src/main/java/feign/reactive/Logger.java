@@ -16,8 +16,7 @@
 package feign.reactive;
 
 import feign.reactive.client.ReactiveRequest;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import feign.reactive.client.WebReactiveClient;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 
@@ -25,6 +24,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static feign.reactive.Logger.MessageSupplier.msg;
+import static feign.reactive.ReactiveUtils.onNext;
 
 /**
  * @author Sergii Karpenko
@@ -32,7 +32,7 @@ import static feign.reactive.Logger.MessageSupplier.msg;
 
 public class Logger {
 
-    private final org.slf4j.Logger logger = LoggerFactory.getLogger(ReactiveClientMethodHandler.class);
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(WebReactiveClient.class);
 
     public void logRequest(String feignMethodTag, ReactiveRequest request) {
         if (logger.isDebugEnabled()) {
@@ -46,22 +46,8 @@ public class Logger {
                             .map(entry -> String.format("%s:%s", entry.getKey(), entry.getValue()))
                             .collect(Collectors.joining("\n"))));
 
-            request.body().subscribe(new Subscriber<Object>() {
-                @Override
-                public void onSubscribe(Subscription subscription) {}
-
-                @Override
-                public void onNext(Object body) {
-                    logger.trace("[{}] REQUEST BODY\n{}", feignMethodTag, body);
-                }
-
-                @Override
-                public void onError(Throwable throwable) {}
-
-                @Override
-                public void onComplete() {}
-            });
-
+            request.body().subscribe(onNext(body ->
+                    logger.trace("[{}] REQUEST BODY\n{}", feignMethodTag, body)));
         }
     }
 
@@ -82,12 +68,6 @@ public class Logger {
 
         if (logger.isDebugEnabled()) {
             logger.debug("[{}]<--- takes {} milliseconds", feignMethodTag, elapsedTime);
-        }
-    }
-
-    public void logRetry(String feignMethodTag) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("[{}]---> RETRYING", feignMethodTag);
         }
     }
 

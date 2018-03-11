@@ -1,7 +1,9 @@
 package feign.reactive;
 
 import feign.RetryableException;
+import feign.reactive.client.WebReactiveClient;
 import org.reactivestreams.Publisher;
+import org.slf4j.LoggerFactory;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,7 +17,10 @@ import java.util.function.Function;
  */
 public class ReactiveRetryers {
 
-    public static Function<Flux<Throwable>, Publisher<?>> retryWithDelay(int maxAttempts, long period) {
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(WebReactiveClient.class);
+
+    public static Function<Flux<Throwable>, Publisher<?>> retryWithDelay(
+            int maxAttempts, long period) {
         return companion -> companion
                 .zipWith(Flux.range(1, maxAttempts), (error, index) -> {
                     if (index < maxAttempts) {
@@ -30,7 +35,12 @@ public class ReactiveRetryers {
                             delay = period;
                         }
 
-                        return Mono.delay(Duration.ofMillis(delay));
+                        return Mono.delay(Duration.ofMillis(delay))
+                                .doOnNext(aLong -> {
+                                    if (logger.isDebugEnabled()) {
+                                        logger.debug("[{}]---> RETRYING on error", error);
+                                    }
+                                });
                     } else throw Exceptions.propagate(error);
                 });
     }

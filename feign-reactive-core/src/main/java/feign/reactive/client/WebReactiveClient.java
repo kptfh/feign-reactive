@@ -37,26 +37,25 @@ public class WebReactiveClient implements ReactiveClient {
     private final Type returnPublisherType;
     private final ParameterizedTypeReference<?> returnActualType;
 
-    public WebReactiveClient(MethodMetadata metadata,
+    public WebReactiveClient(MethodMetadata methodMetadata,
                              WebClient webClient,
                              ErrorDecoder errorDecoder,
-                             boolean decode404,
-                             Logger logger) {
+                             boolean decode404) {
         this.webClient = webClient;
-        this.metadata = metadata;
+        this.metadata = methodMetadata;
         this.errorDecoder = errorDecoder;
         this.decode404 = decode404;
-        this.logger = logger;
+        this.logger = new feign.reactive.Logger();
 
-        this.methodTag = metadata.configKey().substring(0, metadata.configKey().indexOf('('));
-        final Type returnType = metadata.returnType();
+        this.methodTag = methodMetadata.configKey().substring(0, methodMetadata.configKey().indexOf('('));
 
-        bodyActualType = ofNullable(metadata.bodyType()).map(type -> {
+        Type bodyType = methodMetadata.bodyType();
+        bodyActualType = ofNullable(bodyType).map(type -> {
             if(type instanceof ParameterizedType){
                 Class<?> returnBodyType = (Class<?>)((ParameterizedType) type).getRawType();
                 if((returnBodyType).isAssignableFrom(Publisher.class)) {
                     return ParameterizedTypeReference.forType(
-                            resolveLastTypeParameter(returnType,  returnBodyType));
+                            resolveLastTypeParameter(bodyType,  returnBodyType));
                 } else {
                     return ParameterizedTypeReference.forType(type);
                 }
@@ -65,6 +64,7 @@ public class WebReactiveClient implements ReactiveClient {
             }
         }).orElse(null);
 
+        final Type returnType = methodMetadata.returnType();
         returnPublisherType = ((ParameterizedType) returnType).getRawType();
         returnActualType = ParameterizedTypeReference.forType(
                 resolveLastTypeParameter(returnType, (Class<?>) returnPublisherType));

@@ -51,10 +51,10 @@ public class RetryingTest {
 
         IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(WebClient.create())
+                .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
                 .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
         IceCreamOrder order = client.findOrder(1)
-                .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
                 .block();
 
         assertThat(order)
@@ -101,10 +101,10 @@ public class RetryingTest {
 
         IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
                 .webClient(WebClient.create())
+                .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
                 .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
         client.findOrder(1)
-                .retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
                 .block();
     }
 

@@ -4,7 +4,9 @@ import feign.InvocationHandlerFactory.MethodHandler;
 import feign.codec.Decoder;
 import feign.codec.ErrorDecoder;
 import feign.reactive.*;
+import feign.reactive.client.ReactiveClient;
 import feign.reactive.client.ReactiveClientFactory;
+import feign.reactive.client.RetryReactiveClient;
 import feign.reactive.client.WebReactiveClient;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -19,6 +21,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static feign.Util.checkNotNull;
 import static feign.Util.isDefault;
@@ -88,7 +91,7 @@ public class ReactiveFeign {
                 new ReactiveInvocationHandler.Factory();
         private boolean decode404 = false;
 
-        private feign.reactive.Logger logger = new feign.reactive.Logger();
+        private Function<Flux<Throwable>, Publisher<?>> retryFunction;
 
         public Builder<T> webClient(final WebClient webClient) {
             this.webClient = webClient;
@@ -160,6 +163,10 @@ public class ReactiveFeign {
             return this;
         }
 
+        public Builder<T> retryWhen(Function<Flux<Throwable>, Publisher<?>> retryFunction){
+            this.retryFunction = retryFunction;
+            return this;
+        }
 
         /**
          * Defines target and builds client.
@@ -197,7 +204,13 @@ public class ReactiveFeign {
         }
 
         protected ReactiveClientFactory buildReactiveClientFactory() {
-            return metadata -> new WebReactiveClient(metadata, webClient, errorDecoder, decode404, logger);
+            return methodMetadata -> {
+                ReactiveClient reactiveClient = new WebReactiveClient(methodMetadata, webClient, errorDecoder, decode404);
+                if(retryFunction != null) {
+                    reactiveClient = new RetryReactiveClient(reactiveClient, methodMetadata, retryFunction);
+                }
+                return reactiveClient;
+            };
         }
 
     }
