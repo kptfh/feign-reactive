@@ -5,7 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.github.openfeign</groupId>
+    <groupId>io.github.reactivefeign</groupId>
     <artifactId>feign-reactive</artifactId>
     <version>0.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -18,22 +18,22 @@
 
     <name>feign-reactive</name>
     <description>Use Feign client on WebClient</description>
-    <url>https://github.com/OpenFeign/feign-reactive</url>
+    <url>https://github.com/kptfh/feign-reactive</url>
 
     <organization>
-        <name>OpenFeign</name>
-        <url>https://github.com/openfeign</url>
+        <name>ReactiveFeign</name>
+        <url>https://github.com/kptfh/feign-reactive</url>
     </organization>
 
     <issueManagement>
         <system>Github</system>
-        <url>https://github.com/OpenFeign/feign-reactive/issues</url>
+        <url>https://github.com/kptfh/feign-reactive/issues</url>
     </issueManagement>
 
     <scm>
-        <url>https://github.com/OpenFeign/feign-reactive</url>
-        <connection>scm:git:https://github.com/OpenFeign/feign-reactive.git</connection>
-        <developerConnection>scm:git:https://github.com/OpenFeign/feign-reactive.git</developerConnection>
+        <url>https://github.com/kptfh/feign-reactive</url>
+        <connection>scm:git:https://github.com/kptfh/feign-reactive/feign-reactive.git</connection>
+        <developerConnection>scm:git:https://github.com/kptfh/feign-reactive/feign-reactive.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -93,94 +93,44 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.github.openfeign</groupId>
+                <groupId>io.github.reactivefeign</groupId>
                 <artifactId>feign-reactive-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.github.openfeign</groupId>
+                <groupId>io.github.reactivefeign</groupId>
                 <artifactId>feign-reactive-cloud</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.feign</groupId>
+                <artifactId>feign-core</artifactId>
+                <version>${feign.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.tomakehurst</groupId>
+                <artifactId>wiremock</artifactId>
+                <version>${wiremock.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.netflix.feign</groupId>
-            <artifactId>feign-core</artifactId>
-            <version>${feign.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j2</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <!-- Tests -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${assertj.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock</artifactId>
-            <version>${wiremock.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.netflix.feign</groupId>
-            <artifactId>feign-jackson</artifactId>
-            <version>${feign.version}</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>

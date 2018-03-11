@@ -1,6 +1,5 @@
 package feign.reactive;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -10,7 +9,6 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import feign.CloudReactiveFeign;
 import feign.MethodMetadata;
 import feign.Target;
-import feign.jackson.JacksonEncoder;
 import feign.reactive.LoadBalancingReactiveHttpClientTest.TestInterface;
 import org.junit.Before;
 import org.junit.ClassRule;

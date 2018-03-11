@@ -1,6 +1,5 @@
 package feign.reactive;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.netflix.client.ClientException;
@@ -11,7 +10,6 @@ import com.netflix.loadbalancer.AbstractLoadBalancer;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.CloudReactiveFeign;
 import feign.RequestLine;
-import feign.jackson.JacksonEncoder;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

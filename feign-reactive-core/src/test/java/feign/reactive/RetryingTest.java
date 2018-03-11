@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import feign.FeignException;
 import feign.ReactiveFeign;
-import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamServiceApi;
 import feign.reactive.testcase.domain.IceCreamOrder;
 import feign.reactive.testcase.domain.OrderGenerator;

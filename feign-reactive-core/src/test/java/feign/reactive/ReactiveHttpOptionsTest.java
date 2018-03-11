@@ -2,7 +2,6 @@ package feign.reactive;
 
 import feign.ReactiveFeign;
 import feign.Request;
-import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamController;
 import feign.reactive.testcase.IcecreamServiceApi;
 import org.junit.Before;

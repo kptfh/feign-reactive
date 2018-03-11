@@ -1,7 +1,6 @@
 package feign.reactive;
 
 import feign.ReactiveFeign;
-import feign.jackson.JacksonEncoder;
 import feign.reactive.testcase.IcecreamController;
 import feign.reactive.testcase.IcecreamServiceApi;
 import feign.reactive.testcase.IcecreamServiceApiBroken;
