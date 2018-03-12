@@ -60,7 +60,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <feign.version>8.18.0</feign.version>
+        <feign.version>9.5.1</feign.version>
         <ribbon-version>2.1.1</ribbon-version>
         <hystrix.version>1.4.26</hystrix.version>
         <archaius.version>0.6.6</archaius.version>
@@ -103,7 +103,7 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.netflix.feign</groupId>
+                <groupId>io.github.openfeign</groupId>
                 <artifactId>feign-core</artifactId>
                 <version>${feign.version}</version>
             </dependency>
