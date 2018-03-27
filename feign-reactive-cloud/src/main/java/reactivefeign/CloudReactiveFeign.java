@@ -6,10 +6,10 @@ import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.*;
 import feign.codec.ErrorDecoder;
-import reactivefeign.client.ReactiveClient;
-import reactivefeign.client.ReactiveClientFactory;
-import reactivefeign.client.RibbonReactiveClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactivefeign.client.ReactiveClientFactory;
+import reactivefeign.client.ReactiveHttpClient;
+import reactivefeign.client.RibbonReactiveClient;
 
 import java.util.function.Function;
 
@@ -73,7 +73,7 @@ public class CloudReactiveFeign extends ReactiveFeign {
             ReactiveClientFactory reactiveClientFactory = super.buildReactiveClientFactory();
 
             return methodMetadata -> {
-                ReactiveClient reactiveClient = reactiveClientFactory.apply(methodMetadata);
+                ReactiveHttpClient reactiveClient = reactiveClientFactory.apply(methodMetadata);
 
                 return new RibbonReactiveClient(methodMetadata, loadBalancerCommand, reactiveClient);
             };
@@ -104,7 +104,7 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         @Override
-        public Builder<T> options(final Request.Options options) {
+        public Builder<T> options(final ReactiveOptions options) {
             super.options(options);
             return this;
         }

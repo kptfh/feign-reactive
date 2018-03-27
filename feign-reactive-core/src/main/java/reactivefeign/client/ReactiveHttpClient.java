@@ -16,14 +16,14 @@
 
 package reactivefeign.client;
 
-import java.util.function.Function;
-
-import feign.MethodMetadata;
+import org.reactivestreams.Publisher;
 
 /**
+ * Client that execute http requests reactively
+ *
  * @author Sergii Karpenko
  */
+public interface ReactiveHttpClient {
 
-public interface ReactiveClientFactory
-		extends Function<MethodMetadata, ReactiveHttpClient> {
+	Publisher<Object> executeRequest(ReactiveHttpRequest request);
 }
