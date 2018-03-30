@@ -1,6 +1,6 @@
 # feign-reactive
 
-[ ![Download](https://api.bintray.com/packages/kptfh/feign-reactive/client/images/download.svg) ](https://bintray.com/kptfh/feign-reactive/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/kptfh/feign-reactive/client/images/download.svg) ](https://bintray.com/kptfh/feign-reactive/client/_latestVersion)
 
 Use Feign with Spring WebFlux
 
