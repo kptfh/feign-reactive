@@ -88,17 +88,23 @@ Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 ```xml
 <repositories>
     <repository>
-        <id>jcenter</id>
-        <url>https://jcenter.bintray.com/</url>
+        <id>bintray-kptfh-feign-reactive</id>
+        <name>bintray</name>
+        <url>https://dl.bintray.com/kptfh/feign-reactive</url>
     </repository>
 </repositories>
 ...
 <dependencies>
     ...
     <dependency>
-        <groupId>io.github.openfeign</groupId>
-        <artifactId>feign-reactive</artifactId>
-        <version>0.1.0</version>
+        <groupId>io.github.reactivefeign</groupId>
+        <artifactId>feign-reactive-core</artifactId>
+        <version>0.5.0</version>
+    </dependency>
+    <dependency>
+        <groupId>io.github.reactivefeign</groupId>
+        <artifactId>feign-reactive-cloud</artifactId>
+        <version>0.5.0</version>
     </dependency>
     ...
 </dependencies>

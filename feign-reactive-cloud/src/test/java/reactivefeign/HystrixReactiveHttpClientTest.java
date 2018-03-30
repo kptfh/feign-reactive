@@ -23,6 +23,7 @@ import java.util.stream.IntStream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
@@ -97,7 +98,7 @@ public class HystrixReactiveHttpClientTest {
 
         String body = "success!";
         int callsNo = 10;
-        LoadBalancingReactiveHttpClientTest.mockSuccessAfterSeveralAttempts(server, "/", callsNo, 598,
+        LoadBalancingReactiveHttpClientTest.mockSuccessAfterSeveralAttempts(server, "/", callsNo, SC_SERVICE_UNAVAILABLE,
                 aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

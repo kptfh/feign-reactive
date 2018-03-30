@@ -1,13 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-            http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0             http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.reactivefeign</groupId>
     <artifactId>feign-reactive</artifactId>
-    <version>0.3.0-SNAPSHOT</version>
+    <version>0.5.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -30,12 +27,12 @@
         <url>https://github.com/kptfh/feign-reactive/issues</url>
     </issueManagement>
 
-    <scm>
-        <url>https://github.com/kptfh/feign-reactive</url>
-        <connection>scm:git:https://github.com/kptfh/feign-reactive/feign-reactive.git</connection>
-        <developerConnection>scm:git:https://github.com/kptfh/feign-reactive/feign-reactive.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
+    <!--<scm>-->
+        <!--<url>https://github.com/kptfh/feign-reactive</url>-->
+        <!--<connection>scm:git:https://github.com/kptfh/feign-reactive.git</connection>-->
+        <!--<developerConnection>scm:git:https://github.com/kptfh/feign-reactive.git</developerConnection>-->
+        <!--<tag>feign-reactive-0.4.0</tag>-->
+    <!--</scm>-->
 
     <licenses>
         <license>
@@ -87,7 +84,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.0.0.RELEASE</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <dependencyManagement>
@@ -201,7 +198,86 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <!-- Jacoco Code Coverage -->
+            <!--<plugin>-->
+                <!--<groupId>org.jacoco</groupId>-->
+                <!--<artifactId>jacoco-maven-plugin</artifactId>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>prepare-agent</id>-->
+                        <!--<goals>-->
+                            <!--<goal>prepare-agent</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                    <!--<execution>-->
+                        <!--<id>report</id>-->
+                        <!--<phase>prepare-package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>report</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                    <!--<execution>-->
+                        <!--<id>post-unit-test</id>-->
+                        <!--<phase>test</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>report</goal>-->
+                        <!--</goals>-->
+                        <!--<configuration>-->
+                            <!--&lt;!&ndash; Sets the path to the file which contains the execution data. &ndash;&gt;-->
+
+                            <!--<dataFile>target/jacoco.exec</dataFile>-->
+                            <!--&lt;!&ndash; Sets the output directory for the code coverage report. &ndash;&gt;-->
+                            <!--<outputDirectory>target/jacoco-ut</outputDirectory>-->
+                        <!--</configuration>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.4.1</version>
+                <configuration>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
+    <!-- Push binary to JCenter -->
+    <distributionManagement>
+        <repository>
+            <id>bintray-kptfh-feign-reactive</id>
+            <name>kptfh-feign-reactive</name>
+            <url>https://api.bintray.com/maven/kptfh/feign-reactive/client/;publish=1</url>
+        </repository>
+    </distributionManagement>
+    <!--<distributionManagement>-->
+        <!--<repository>-->
+            <!--<id>bintray</id>-->
+            <!--<url>https://api.bintray.com/maven/kptfh/feign-reactive/client/;publish=1</url>-->
+        <!--</repository>-->
+    <!--</distributionManagement>-->
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${versions-maven-plugin.version}</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>dependency-updates-report</report>
+                            <report>plugin-updates-report</report>
+                            <report>property-updates-report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>
