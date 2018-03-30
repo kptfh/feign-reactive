@@ -254,12 +254,6 @@
             <url>https://api.bintray.com/maven/kptfh/feign-reactive/client/;publish=1</url>
         </repository>
     </distributionManagement>
-    <!--<distributionManagement>-->
-        <!--<repository>-->
-            <!--<id>bintray</id>-->
-            <!--<url>https://api.bintray.com/maven/kptfh/feign-reactive/client/;publish=1</url>-->
-        <!--</repository>-->
-    <!--</distributionManagement>-->
 
     <reporting>
         <plugins>

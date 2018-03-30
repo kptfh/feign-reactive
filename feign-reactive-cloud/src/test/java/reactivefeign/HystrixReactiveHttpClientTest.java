@@ -120,7 +120,7 @@ public class HystrixReactiveHttpClientTest {
         assertThat(server.getAllServeEvents().size()).isLessThan(callsNo);
         Throwable firstError = (Throwable) results.get(0);
         assertThat(firstError).isInstanceOf(HystrixRuntimeException.class);
-        assertThat(firstError.getMessage()).contains("failed and no fallback available");
+        assertThat(firstError.getMessage()).contains("and no fallback available");
 
         Throwable lastError = (Throwable) results.get(results.size() - 1);
         assertThat(lastError).isInstanceOf(HystrixRuntimeException.class);
