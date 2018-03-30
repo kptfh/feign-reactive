@@ -69,7 +69,8 @@ public class DefaultMethodTest {
 						.withBody(orderStr)));
 
 		IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
-				.webClient(WebClient.create()).target(IcecreamServiceApi.class,
+				.webClient(WebClient.create())
+				.target(IcecreamServiceApi.class,
 						"http://localhost:" + wireMockRule.port());
 
 		IceCreamOrder firstOrder = client.findFirstOrder().block();
@@ -82,7 +83,8 @@ public class DefaultMethodTest {
 		IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
 
 		IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
-				.webClient(WebClient.create()).target(IcecreamServiceApi.class,
+				.webClient(WebClient.create())
+				.target(IcecreamServiceApi.class,
 						"http://localhost:" + wireMockRule.port());
 
 		IceCreamOrder errorOrder = client.throwExceptionMono().onErrorReturn(
@@ -95,8 +97,10 @@ public class DefaultMethodTest {
 	public void shouldWrapExceptionWithFlux() throws JsonProcessingException {
 		IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
 
-		IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
-				.webClient(WebClient.create()).target(IcecreamServiceApi.class,
+		IcecreamServiceApi client = ReactiveFeign
+				.<IcecreamServiceApi>builder()
+				.webClient(WebClient.create())
+				.target(IcecreamServiceApi.class,
 						"http://localhost:" + wireMockRule.port());
 
 		IceCreamOrder errorOrder = client.throwExceptionFlux()
@@ -112,19 +116,20 @@ public class DefaultMethodTest {
 
 		IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
 				.webClient(WebClient.create())
-				.options(new ReactiveOptions.Builder().setConnectTimeoutMillis(300)
+				.options(new ReactiveOptions.Builder()
+						.setConnectTimeoutMillis(300)
 						.setReadTimeoutMillis(100).build())
 				.target(IcecreamServiceApi.class,
 						"http://localhost:" + wireMockRule.port());
 
-		IcecreamServiceApi clientWithSameTarget = ReactiveFeign
-				.<IcecreamServiceApi>builder().webClient(WebClient.create())
+		IcecreamServiceApi clientWithSameTarget = ReactiveFeign.<IcecreamServiceApi>builder()
+				.webClient(WebClient.create())
 				.target(IcecreamServiceApi.class,
 						"http://localhost:" + wireMockRule.port());
 		assertThat(client).isEqualTo(clientWithSameTarget);
 
-		IcecreamServiceApi clientWithOtherPort = ReactiveFeign
-				.<IcecreamServiceApi>builder().webClient(WebClient.create())
+		IcecreamServiceApi clientWithOtherPort = ReactiveFeign.<IcecreamServiceApi>builder()
+				.webClient(WebClient.create())
 				.target(IcecreamServiceApi.class,
 						"http://localhost:" + (wireMockRule.port() + 1));
 		assertThat(client).isNotEqualTo(clientWithOtherPort);
@@ -139,7 +144,8 @@ public class DefaultMethodTest {
 	public void shouldOverrideHashcode() {
 
 		IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
-				.webClient(WebClient.create()).target(IcecreamServiceApi.class,
+				.webClient(WebClient.create())
+				.target(IcecreamServiceApi.class,
 						"http://localhost:" + wireMockRule.port());
 
 		IcecreamServiceApi otherClientWithSameTarget = ReactiveFeign

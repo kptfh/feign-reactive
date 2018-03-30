@@ -16,13 +16,6 @@
 
 package reactivefeign;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,16 +26,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.junit4.SpringRunner;
 import reactivefeign.testcase.IcecreamController;
 import reactivefeign.testcase.IcecreamServiceApi;
 import reactivefeign.testcase.IcecreamServiceApiBroken;
-import reactivefeign.testcase.domain.Bill;
-import reactivefeign.testcase.domain.Flavor;
-import reactivefeign.testcase.domain.IceCreamOrder;
-import reactivefeign.testcase.domain.Mixin;
-import reactivefeign.testcase.domain.OrderGenerator;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.web.reactive.function.client.WebClient;
+import reactivefeign.testcase.domain.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * @author Sergii Karpenko
@@ -54,7 +49,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableAutoConfiguration
 public class ReactiveHttpClientTest {
 
-	private WebClient webClient = WebClient.create();
 	private IcecreamServiceApi client;
 
 	@Autowired
@@ -71,7 +65,7 @@ public class ReactiveHttpClientTest {
 	@Before
 	public void setUp() {
 		targetUrl = "http://localhost:" + port;
-		client = ReactiveFeign.<IcecreamServiceApi>builder().webClient(webClient)
+		client = ReactiveFeign.<IcecreamServiceApi>builder()
 				.target(IcecreamServiceApi.class, targetUrl);
 	}
 
@@ -117,24 +111,13 @@ public class ReactiveHttpClientTest {
 	}
 
 	@Test
-	public void testInstantiationContract_forgotProvideWebClient() {
-
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage(
-				"WebClient instance wasn't provided in ReactiveFeign builder");
-
-		ReactiveFeign.<IcecreamServiceApi>builder().target(IcecreamServiceApi.class,
-				targetUrl);
-	}
-
-	@Test
 	public void testInstantiationBrokenContract_throwsException() {
 
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException
 				.expectMessage(containsString("IcecreamServiceApiBroken#findOrder(int)"));
 
-		ReactiveFeign.<IcecreamServiceApiBroken>builder().webClient(webClient)
+		ReactiveFeign.<IcecreamServiceApiBroken>builder()
 				.target(IcecreamServiceApiBroken.class, targetUrl);
 	}
 }

@@ -45,10 +45,6 @@ Build the client :
 /* Create instance of your API */
 IcecreamServiceApi client = ReactiveFeign
     .builder()
-    .webClient(WebClient.create())
-    .encoder(new JacksonEncoder(TestUtils.MAPPER))
-    .logger(new Slf4jLogger())
-    .logLevel(Logger.Level.FULL)
     .target(IcecreamServiceApi.class, "http://www.icecreame.com")
 
 /* Execute nonblocking requests */
@@ -59,9 +55,7 @@ Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 or cloud aware client :
 
 ```java
- TestInterface client = CloudReactiveFeign.<TestInterface>builder()
-    .webClient(WebClient.create())
-    .encoder(new JacksonEncoder(new ObjectMapper()))
+ IcecreamServiceApi client = CloudReactiveFeign.<IcecreamServiceApi>builder()
     .setHystrixCommandSetterFactory(new DefaultSetterFactory())
     .setFallback(new TestInterface() {
         @Override
@@ -75,7 +69,7 @@ or cloud aware client :
                  .withRetryHandler(new DefaultLoadBalancerRetryHandler(1, 1, true))
                  .build()
     )
-    .target(TestInterface.class, "http://" + serviceName);
+    .target(IcecreamServiceApi.class, "http://" + serviceName);
 
 /* Execute nonblocking requests */
 Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();

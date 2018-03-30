@@ -64,8 +64,10 @@ public class AllFeaturesTest {
 
 	@Before
 	public void setUp() {
-		client = ReactiveFeign.<AllFeaturesApi>builder().webClient(WebClient.create())
-				.decode404().target(AllFeaturesApi.class, "http://localhost:" + port);
+		client = ReactiveFeign.<AllFeaturesApi>builder()
+				.webClient(WebClient.create())
+				.decode404()
+				.target(AllFeaturesApi.class, "http://localhost:" + port);
 	}
 
 	@Test

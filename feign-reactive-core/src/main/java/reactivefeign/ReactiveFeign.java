@@ -108,7 +108,7 @@ public class ReactiveFeign {
 	public static class Builder<T> {
 		private Contract contract = new ReactiveDelegatingContract(
 				new Contract.Default());
-		private WebClient webClient;
+		private WebClient webClient = WebClient.create();
 		private ErrorDecoder errorDecoder = new ErrorDecoder.Default();
 		private InvocationHandlerFactory invocationHandlerFactory = new ReactiveInvocationHandler.Factory();
 		private boolean decode404 = false;
