@@ -1,7 +1,6 @@
 # feign-reactive
 
-[![Build Status](https://travis-ci.org/OpenFeign/feign-vertx.svg?branch=master)](https://travis-ci.org/OpenFeign/feign-vertx)
-[ ![Download](https://api.bintray.com/packages/hosuaby/OpenFeign/feign-vertx/images/download.svg) ](https://bintray.com/hosuaby/OpenFeign/feign-vertx/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/kptfh/feign-reactive/client/images/download.svg?version=0.5.0) ](https://bintray.com/kptfh/feign-reactive/client/0.5.0/link)
 
 Use Feign with Spring WebFlux
 
