@@ -4,6 +4,9 @@
 
 Use Feign with Spring WebFlux
 
+# Plan to proceed with Spring auto configuration after 30 stars :) 
+
+
 ## Overview
 
 Implementation of Feign on Spring WebClient. Brings you the best of two worlds together : 
