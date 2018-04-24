@@ -6,9 +6,6 @@ import com.netflix.client.ClientException;
 import com.netflix.client.DefaultLoadBalancerRetryHandler;
 import com.netflix.client.RequestSpecificRetryHandler;
 import com.netflix.client.RetryHandler;
-import com.netflix.loadbalancer.AbstractLoadBalancer;
-import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
-import reactivefeign.CloudReactiveFeign;
 import feign.RequestLine;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -24,7 +21,6 @@ import java.util.stream.Stream;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
-import static com.netflix.client.ClientFactory.getNamedLoadBalancer;
 import static com.netflix.config.ConfigurationManager.getConfigInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.isA;
@@ -61,11 +57,7 @@ public class LoadBalancingReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .setLoadBalancerCommand(
-                        LoadBalancerCommand.builder()
-                                .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
-                                .build()
-                )
+                .enableLoadBalancer()
                 .target(TestInterface.class, "http://" + serviceName);
 
         try {
@@ -157,12 +149,7 @@ public class LoadBalancingReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .setLoadBalancerCommand(
-                        LoadBalancerCommand.builder()
-                                .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
-                                .withRetryHandler(retryHandler)
-                                .build()
-                )
+                .enableLoadBalancer(retryHandler)
                 .target(TestInterface.class, "http://" + serviceName);
 
         try {

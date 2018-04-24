@@ -1,16 +1,23 @@
 package reactivefeign;
 
+import com.netflix.client.ClientFactory;
+import com.netflix.client.RetryHandler;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
-import feign.*;
-import feign.codec.ErrorDecoder;
+import feign.Contract;
+import feign.InvocationHandlerFactory;
+import feign.MethodMetadata;
+import feign.Target;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactivefeign.client.ReactiveClientFactory;
 import reactivefeign.client.ReactiveHttpClient;
+import reactivefeign.client.ReactiveStatusHandler;
 import reactivefeign.client.RibbonReactiveClient;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.function.Function;
 
 import static java.util.Optional.ofNullable;
@@ -35,7 +42,7 @@ public class CloudReactiveFeign extends ReactiveFeign {
 
         private SetterFactory commandSetterFactory;
         private Function<Throwable, ? extends T> fallbackFactory;
-        private LoadBalancerCommand<Object> loadBalancerCommand;
+        private Function<String, LoadBalancerCommand<Object>> loadBalancerCommandFactory = s -> null;
 
         public Builder<T> setHystrixCommandSetterFactory(SetterFactory commandSetterFactory) {
             this.commandSetterFactory = commandSetterFactory;
@@ -52,8 +59,27 @@ public class CloudReactiveFeign extends ReactiveFeign {
             return this;
         }
 
-        public Builder<T> setLoadBalancerCommand(LoadBalancerCommand<Object> loadBalancerCommand) {
-            this.loadBalancerCommand = loadBalancerCommand;
+        public Builder<T> enableLoadBalancer(){
+            setLoadBalancerCommandFactory(serviceName ->
+                    LoadBalancerCommand.builder()
+                            .withLoadBalancer(ClientFactory.getNamedLoadBalancer(serviceName))
+                            .build());
+            return this;
+        }
+
+        public Builder<T> enableLoadBalancer(RetryHandler retryHandler){
+            setLoadBalancerCommandFactory(serviceName ->
+                    LoadBalancerCommand.builder()
+                    .withLoadBalancer(ClientFactory.getNamedLoadBalancer(serviceName))
+                    .withRetryHandler(retryHandler)
+                    .build());
+            return this;
+        }
+
+
+        public Builder<T> setLoadBalancerCommandFactory(
+                Function<String, LoadBalancerCommand<Object>> loadBalancerCommandFactory) {
+            this.loadBalancerCommandFactory = loadBalancerCommandFactory;
             return this;
         }
 
@@ -71,12 +97,20 @@ public class CloudReactiveFeign extends ReactiveFeign {
         @Override
         protected ReactiveClientFactory buildReactiveClientFactory() {
             ReactiveClientFactory reactiveClientFactory = super.buildReactiveClientFactory();
-
             return methodMetadata -> {
                 ReactiveHttpClient reactiveClient = reactiveClientFactory.apply(methodMetadata);
-
-                return new RibbonReactiveClient(methodMetadata, loadBalancerCommand, reactiveClient);
+                String serviceName = extractServiceName(target.url());
+                return new RibbonReactiveClient(methodMetadata,
+                        loadBalancerCommandFactory.apply(serviceName), reactiveClient);
             };
+        }
+
+        private String extractServiceName(String url){
+            try {
+                return new URI(url).getHost();
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException("Can't extract service name from url", e);
+            }
         }
 
         @Override
@@ -98,8 +132,8 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         @Override
-        public Builder<T> errorDecoder(final ErrorDecoder errorDecoder) {
-            super.errorDecoder(errorDecoder);
+        public ReactiveFeign.Builder<T> statusHandler(ReactiveStatusHandler statusHandler) {
+            super.statusHandler(statusHandler);
             return this;
         }
 

@@ -53,6 +53,13 @@ public class RibbonReactiveClient implements ReactiveHttpClient {
         }
     }
 
+    /*if (retryPolicy.retryableStatusCode(response.status())) {
+					byte[] byteArray = response.body() == null ? new byte[]{} : StreamUtils.copyToByteArray(response.body().asInputStream());
+					response.close();
+					throw new RibbonResponseStatusCodeException(RetryableFeignLoadBalancer.this.clientName, response,
+							byteArray, request.getUri());
+				}*/
+
     protected ReactiveHttpRequest loadBalanceRequest(ReactiveHttpRequest request, Server server) {
         URI uri = request.uri();
         try {
