@@ -16,38 +16,35 @@
 
 package reactivefeign;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
-import static org.apache.http.HttpHeaders.RETRY_AFTER;
-import static org.apache.http.HttpStatus.SC_OK;
-import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
-import static org.assertj.core.api.Java6Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
-import java.util.Arrays;
-import java.util.List;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
+import feign.RetryableException;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactivefeign.client.RetryReactiveHttpClient;
 import reactivefeign.testcase.IcecreamServiceApi;
 import reactivefeign.testcase.domain.IceCreamOrder;
 import reactivefeign.testcase.domain.Mixin;
 import reactivefeign.testcase.domain.OrderGenerator;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
+import java.util.Arrays;
+import java.util.List;
 
-import feign.FeignException;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
+import static org.apache.http.HttpHeaders.RETRY_AFTER;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
+import static org.assertj.core.api.Java6Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author Sergii Karpenko
@@ -159,8 +156,9 @@ public class RetryingTest {
 	@Test
 	public void shouldFailAsNoMoreRetries() {
 
-		expectedException.expect(FeignException.class);
-		expectedException.expectMessage(containsString("status 503"));
+		expectedException.expect(RuntimeException.class);
+		expectedException.expectCause(allOf(isA(RetryReactiveHttpClient.OutOfRetriesException.class),
+				hasProperty("cause", isA(RetryableException.class))));
 
 		String orderUrl = "/icecream/orders/1";
 
@@ -170,7 +168,7 @@ public class RetryingTest {
 
 		IcecreamServiceApi client = ReactiveFeign.<IcecreamServiceApi>builder()
 				.webClient(WebClient.create())
-				.retryWhen(ReactiveRetryers.retryWithDelay(3, 0))
+				.retryWhen(ReactiveRetryers.retry(3))
 				.target(IcecreamServiceApi.class,
 						"http://localhost:" + wireMockRule.port());
 

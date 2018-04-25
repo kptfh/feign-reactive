@@ -10,15 +10,21 @@ import feign.Contract;
 import feign.InvocationHandlerFactory;
 import feign.MethodMetadata;
 import feign.Target;
+import org.reactivestreams.Publisher;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactivefeign.client.ReactiveClientFactory;
 import reactivefeign.client.ReactiveHttpClient;
-import reactivefeign.client.ReactiveStatusHandler;
+import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.client.RibbonReactiveClient;
+import reactor.core.publisher.Flux;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static java.util.Optional.ofNullable;
 
@@ -68,6 +74,11 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         public Builder<T> enableLoadBalancer(RetryHandler retryHandler){
+            if(retryHandler.getMaxRetriesOnSameServer() > 0){
+                //TODO replace to warn
+                throw new IllegalArgumentException("Use retryWhen(ReactiveRetryPolicy retryPolicy) " +
+                        "as it allow to configure retry delays (backoff)");
+            }
             setLoadBalancerCommandFactory(serviceName ->
                     LoadBalancerCommand.builder()
                     .withLoadBalancer(ClientFactory.getNamedLoadBalancer(serviceName))
@@ -132,8 +143,28 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         @Override
-        public ReactiveFeign.Builder<T> statusHandler(ReactiveStatusHandler statusHandler) {
+        public Builder<T> statusHandler(ReactiveStatusHandler statusHandler) {
             super.statusHandler(statusHandler);
+            return this;
+        }
+
+        @Override
+        public Builder<T> throwOnStatusCode(Predicate<HttpStatus> statusPredicate,
+                                                          BiFunction<String, ClientResponse, Throwable> errorFunction){
+            super.throwOnStatusCode(statusPredicate, errorFunction);
+            return this;
+        }
+
+        @Override
+        public Builder<T> retryWhen(
+                Function<Flux<Throwable>, Publisher<Throwable>> retryFunction) {
+            super.retryWhen(retryFunction);
+            return this;
+        }
+
+        @Override
+        public Builder<T> retryWhen(ReactiveRetryPolicy retryPolicy){
+            super.retryWhen(retryPolicy);
             return this;
         }
 

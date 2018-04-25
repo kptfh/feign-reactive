@@ -1,9 +1,12 @@
-package reactivefeign.client;
+package reactivefeign.client.statushandler;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
+/**
+ * @author Sergii Karpenko
+ */
 public interface ReactiveStatusHandler {
 
 	boolean shouldHandle(HttpStatus status);

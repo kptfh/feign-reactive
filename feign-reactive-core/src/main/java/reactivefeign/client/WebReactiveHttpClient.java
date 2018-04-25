@@ -26,6 +26,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactivefeign.Logger;
+import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.ParameterizedType;

@@ -1,4 +1,4 @@
-package reactivefeign.client;
+package reactivefeign.client.statushandler;
 
 import feign.Response;
 import feign.codec.ErrorDecoder;
@@ -10,6 +10,9 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * @author Sergii Karpenko
+ */
 public class DefaultFeignErrorDecoder implements ReactiveStatusHandler{
 
     private final ErrorDecoder errorDecoder;

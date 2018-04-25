@@ -16,8 +16,26 @@
 
 package reactivefeign;
 
-import static feign.Util.checkNotNull;
-import static feign.Util.isDefault;
+import feign.*;
+import feign.InvocationHandlerFactory.MethodHandler;
+import feign.codec.ErrorDecoder;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import org.reactivestreams.Publisher;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactivefeign.client.ReactiveClientFactory;
+import reactivefeign.client.ReactiveHttpClient;
+import reactivefeign.client.RetryReactiveHttpClient;
+import reactivefeign.client.WebReactiveHttpClient;
+import reactivefeign.client.statushandler.CompositeStatusHandler;
+import reactivefeign.client.statushandler.DefaultFeignErrorDecoder;
+import reactivefeign.client.statushandler.ReactiveStatusHandler;
+import reactivefeign.client.statushandler.SimpleStatusHandler;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -27,26 +45,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
-import org.reactivestreams.Publisher;
-import reactivefeign.client.*;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import feign.Contract;
-import feign.Feign;
-import feign.FeignException;
-import feign.InvocationHandlerFactory;
-import feign.InvocationHandlerFactory.MethodHandler;
-import feign.MethodMetadata;
-import feign.Request;
-import feign.Target;
-import feign.codec.ErrorDecoder;
-import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import static feign.Util.checkNotNull;
+import static feign.Util.isDefault;
+import static java.util.Arrays.asList;
 
 /**
  * Allows Feign interfaces to accept {@link Publisher} as body and return reactive
@@ -152,6 +157,15 @@ public class ReactiveFeign {
 			return this;
 		}
 
+		public Builder<T> throwOnStatusCode(Predicate<HttpStatus> statusPredicate,
+											BiFunction<String, ClientResponse, Throwable> errorFunction){
+			this.statusHandler = new CompositeStatusHandler(asList(
+					new SimpleStatusHandler(statusPredicate, errorFunction),
+					statusHandler
+			));
+			return this;
+		}
+
 		/**
 		 * Sets request options using Feign {@link Request.Options}
 		 *
@@ -188,6 +202,11 @@ public class ReactiveFeign {
 		public Builder<T> retryWhen(
 				Function<Flux<Throwable>, Publisher<Throwable>> retryFunction) {
 			this.retryFunction = retryFunction;
+			return this;
+		}
+
+		public Builder<T> retryWhen(ReactiveRetryPolicy retryPolicy){
+			retryWhen(retryPolicy.toRetryFunction());
 			return this;
 		}
 
