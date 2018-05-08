@@ -138,7 +138,9 @@ public class HystrixReactiveHttpClientTest {
                         .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
                         .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey + testNo))
                         .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                                .withCircuitBreakerRequestVolumeThreshold(1));
+                                .withCircuitBreakerRequestVolumeThreshold(1)
+                                .withExecutionTimeoutEnabled(false)
+                        );
             }
         };
     }
