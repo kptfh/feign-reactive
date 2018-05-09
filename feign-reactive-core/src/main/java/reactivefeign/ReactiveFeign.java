@@ -26,10 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactivefeign.client.ReactiveClientFactory;
-import reactivefeign.client.ReactiveHttpClient;
-import reactivefeign.client.RetryReactiveHttpClient;
-import reactivefeign.client.WebReactiveHttpClient;
+import reactivefeign.client.*;
 import reactivefeign.client.statushandler.CompositeStatusHandler;
 import reactivefeign.client.statushandler.DefaultFeignErrorDecoder;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
@@ -111,6 +108,7 @@ public class ReactiveFeign {
 		protected Contract contract = new ReactiveDelegatingContract(
 				new Contract.Default());
 		protected WebClient webClient = WebClient.create();
+		protected ReactiveHttpRequestInterceptor requestInterceptor = request -> request;
 		protected ReactiveStatusHandler statusHandler = new DefaultFeignErrorDecoder(new ErrorDecoder.Default());
 		protected InvocationHandlerFactory invocationHandlerFactory = new ReactiveInvocationHandler.Factory();
 		protected boolean decode404 = false;
@@ -132,6 +130,11 @@ public class ReactiveFeign {
 		 */
 		public Builder<T> contract(final Contract contract) {
 			this.contract = new ReactiveDelegatingContract(contract);
+			return this;
+		}
+
+		public Builder<T> requestInterceptor(ReactiveHttpRequestInterceptor requestInterceptor) {
+			this.requestInterceptor = requestInterceptor;
 			return this;
 		}
 
@@ -248,7 +251,7 @@ public class ReactiveFeign {
 		protected ReactiveClientFactory buildReactiveClientFactory() {
 			return methodMetadata -> {
 				ReactiveHttpClient reactiveClient = new WebReactiveHttpClient(
-						methodMetadata, webClient, statusHandler, decode404);
+						methodMetadata, webClient, requestInterceptor, statusHandler, decode404);
 				if (retryFunction != null) {
 					reactiveClient = new RetryReactiveHttpClient(
 							reactiveClient,	methodMetadata, retryFunction);

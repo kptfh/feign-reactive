@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactivefeign.client.ReactiveClientFactory;
 import reactivefeign.client.ReactiveHttpClient;
+import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.client.RibbonReactiveClient;
 import reactor.core.publisher.Flux;
@@ -133,6 +134,11 @@ public class CloudReactiveFeign extends ReactiveFeign {
         @Override
         public Builder<T> contract(final Contract contract) {
             super.contract(contract);
+            return this;
+        }
+
+        public Builder<T> requestInterceptor(ReactiveHttpRequestInterceptor requestInterceptor) {
+            super.requestInterceptor(requestInterceptor);
             return this;
         }
 

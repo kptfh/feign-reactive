@@ -46,6 +46,7 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 	private final WebClient webClient;
 	private final String methodTag;
 	private final MethodMetadata metadata;
+	private final ReactiveHttpRequestInterceptor requestInterceptor;
 	private final ReactiveStatusHandler statusHandler;
 	private final boolean decode404;
 	private final Logger logger;
@@ -54,9 +55,11 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 	private final ParameterizedTypeReference<?> returnActualType;
 
 	public WebReactiveHttpClient(MethodMetadata methodMetadata, WebClient webClient,
+								 ReactiveHttpRequestInterceptor requestInterceptor,
 								 ReactiveStatusHandler statusHandler, boolean decode404) {
 		this.webClient = webClient;
 		this.metadata = methodMetadata;
+		this.requestInterceptor = requestInterceptor;
 		this.statusHandler = statusHandler;
 		this.decode404 = decode404;
 		this.logger = new Logger();
@@ -75,13 +78,15 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 
 	@Override
 	public Publisher<Object> executeRequest(ReactiveHttpRequest request) {
-		logger.logRequest(methodTag, request);
+		ReactiveHttpRequest requestPreprocessed = requestInterceptor.apply(request);
+
+		logger.logRequest(methodTag, requestPreprocessed);
 
 		long start = System.currentTimeMillis();
-		WebClient.ResponseSpec response = webClient.method(request.method())
-				.uri(request.uri())
-				.headers(httpHeaders -> setUpHeaders(request, httpHeaders))
-				.body(provideBody(request))
+		WebClient.ResponseSpec response = webClient.method(requestPreprocessed.method())
+				.uri(requestPreprocessed.uri())
+				.headers(httpHeaders -> setUpHeaders(requestPreprocessed, httpHeaders))
+				.body(provideBody(requestPreprocessed))
 				.retrieve()
 				.onStatus(httpStatus -> true, resp -> handleResponseStatus(metadata.configKey(), resp, start));
 

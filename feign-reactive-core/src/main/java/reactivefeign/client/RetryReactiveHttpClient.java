@@ -57,14 +57,19 @@ public class RetryReactiveHttpClient implements ReactiveHttpClient {
 		Publisher<Object> objectPublisher = reactiveClient.executeRequest(request);
 		if (returnPublisherType == Mono.class) {
 			return ((Mono<Object>) objectPublisher).retryWhen(retryFunction)
-					.onErrorMap(throwable -> {
-						logger.debug("[{}]---> USED ALL RETRIES", feignMethodTag, throwable);
-						return new OutOfRetriesException(throwable, feignMethodTag);
-					});
+					.onErrorMap(outOfRetries());
 		}
 		else {
-			return ((Flux<Object>) objectPublisher).retryWhen(retryFunction);
+			return ((Flux<Object>) objectPublisher).retryWhen(retryFunction)
+					.onErrorMap(outOfRetries());
 		}
+	}
+
+	private Function<Throwable, Throwable> outOfRetries() {
+		return throwable -> {
+            logger.debug("[{}]---> USED ALL RETRIES", feignMethodTag, throwable);
+            return new OutOfRetriesException(throwable, feignMethodTag);
+        };
 	}
 
 	private static Function<Flux<Throwable>, Publisher<?>> wrapWithLog(
