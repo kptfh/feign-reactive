@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.client.ReactiveHttpResponse;
+import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.publisher.PublisherClientFactory;
 import reactivefeign.publisher.PublisherHttpClient;
@@ -140,6 +141,11 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         @Override
+        public Builder<T> requestInterceptor(ReactiveHttpRequestInterceptor requestInterceptor) {
+            super.requestInterceptor(requestInterceptor);
+            return this;
+        }
+
         public Builder<T> requestInterceptor(ReactiveHttpRequestInterceptor requestInterceptor) {
             super.requestInterceptor(requestInterceptor);
             return this;
