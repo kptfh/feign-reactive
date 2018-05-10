@@ -6,16 +6,16 @@ import com.netflix.client.ClientException;
 import com.netflix.client.DefaultLoadBalancerRetryHandler;
 import com.netflix.client.RequestSpecificRetryHandler;
 import com.netflix.client.RetryHandler;
-import com.netflix.loadbalancer.AbstractLoadBalancer;
-import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
-import reactivefeign.CloudReactiveFeign;
+import feign.FeignException;
 import feign.RequestLine;
+import feign.RetryableException;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactivefeign.client.RetryReactiveHttpClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -24,10 +24,12 @@ import java.util.stream.Stream;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
-import static com.netflix.client.ClientFactory.getNamedLoadBalancer;
 import static com.netflix.config.ConfigurationManager.getConfigInstance;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.isA;
+import static reactivefeign.ReactiveRetryers.retry;
 
 /**
  * @author Sergii Karpenko
@@ -61,11 +63,7 @@ public class LoadBalancingReactiveHttpClientTest {
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .setLoadBalancerCommand(
-                        LoadBalancerCommand.builder()
-                                .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
-                                .build()
-                )
+                .enableLoadBalancer()
                 .target(TestInterface.class, "http://" + serviceName);
 
         try {
@@ -87,7 +85,9 @@ public class LoadBalancingReactiveHttpClientTest {
     @Test
     public void shouldFailAsPolicyWoRetries() throws IOException, InterruptedException {
 
-        expectedException.expect(feign.RetryableException.class);
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectCause(allOf(isA(RetryReactiveHttpClient.OutOfRetriesException.class),
+                hasProperty("cause", isA(RetryableException.class))));
 
         try {
             loadBalancingWithRetry(2, 0, 0);
@@ -102,7 +102,8 @@ public class LoadBalancingReactiveHttpClientTest {
     public void shouldRetryOnSameAndFail() throws IOException, InterruptedException {
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectCause(isA(ClientException.class));
+        expectedException.expectCause(allOf(isA(RetryReactiveHttpClient.OutOfRetriesException.class),
+                                            hasProperty("cause", isA(RetryableException.class))));
 
         try {
             loadBalancingWithRetry(2, 1, 0);
@@ -153,16 +154,12 @@ public class LoadBalancingReactiveHttpClientTest {
         getConfigInstance().setProperty(serverListKey, "localhost:" + server1.port() + "," + "localhost:" + server2.port());
 
         RetryHandler retryHandler = new RequestSpecificRetryHandler(true, true,
-                new DefaultLoadBalancerRetryHandler(retryOnSame, retryOnNext, true), null);
+                new DefaultLoadBalancerRetryHandler(0, retryOnNext, true), null);
 
         TestInterface client = CloudReactiveFeign.<TestInterface>builder()
                 .webClient(WebClient.create())
-                .setLoadBalancerCommand(
-                        LoadBalancerCommand.builder()
-                                .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
-                                .withRetryHandler(retryHandler)
-                                .build()
-                )
+                .retryWhen(retry(retryOnSame))
+                .enableLoadBalancer(retryHandler)
                 .target(TestInterface.class, "http://" + serviceName);
 
         try {

@@ -1,17 +1,31 @@
 package reactivefeign;
 
+import com.netflix.client.ClientFactory;
+import com.netflix.client.RetryHandler;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
-import feign.*;
-import feign.codec.ErrorDecoder;
+import feign.Contract;
+import feign.InvocationHandlerFactory;
+import feign.MethodMetadata;
+import feign.Target;
+import org.reactivestreams.Publisher;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactivefeign.client.ReactiveClientFactory;
 import reactivefeign.client.ReactiveHttpClient;
+import reactivefeign.client.ReactiveHttpRequestInterceptor;
+import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.client.RibbonReactiveClient;
+import reactor.core.publisher.Flux;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static java.util.Optional.ofNullable;
 
@@ -35,7 +49,7 @@ public class CloudReactiveFeign extends ReactiveFeign {
 
         private SetterFactory commandSetterFactory;
         private Function<Throwable, ? extends T> fallbackFactory;
-        private LoadBalancerCommand<Object> loadBalancerCommand;
+        private Function<String, LoadBalancerCommand<Object>> loadBalancerCommandFactory = s -> null;
 
         public Builder<T> setHystrixCommandSetterFactory(SetterFactory commandSetterFactory) {
             this.commandSetterFactory = commandSetterFactory;
@@ -52,8 +66,32 @@ public class CloudReactiveFeign extends ReactiveFeign {
             return this;
         }
 
-        public Builder<T> setLoadBalancerCommand(LoadBalancerCommand<Object> loadBalancerCommand) {
-            this.loadBalancerCommand = loadBalancerCommand;
+        public Builder<T> enableLoadBalancer(){
+            setLoadBalancerCommandFactory(serviceName ->
+                    LoadBalancerCommand.builder()
+                            .withLoadBalancer(ClientFactory.getNamedLoadBalancer(serviceName))
+                            .build());
+            return this;
+        }
+
+        public Builder<T> enableLoadBalancer(RetryHandler retryHandler){
+            if(retryHandler.getMaxRetriesOnSameServer() > 0){
+                //TODO replace to warn
+                throw new IllegalArgumentException("Use retryWhen(ReactiveRetryPolicy retryPolicy) " +
+                        "as it allow to configure retry delays (backoff)");
+            }
+            setLoadBalancerCommandFactory(serviceName ->
+                    LoadBalancerCommand.builder()
+                    .withLoadBalancer(ClientFactory.getNamedLoadBalancer(serviceName))
+                    .withRetryHandler(retryHandler)
+                    .build());
+            return this;
+        }
+
+
+        public Builder<T> setLoadBalancerCommandFactory(
+                Function<String, LoadBalancerCommand<Object>> loadBalancerCommandFactory) {
+            this.loadBalancerCommandFactory = loadBalancerCommandFactory;
             return this;
         }
 
@@ -71,12 +109,20 @@ public class CloudReactiveFeign extends ReactiveFeign {
         @Override
         protected ReactiveClientFactory buildReactiveClientFactory() {
             ReactiveClientFactory reactiveClientFactory = super.buildReactiveClientFactory();
-
             return methodMetadata -> {
                 ReactiveHttpClient reactiveClient = reactiveClientFactory.apply(methodMetadata);
-
-                return new RibbonReactiveClient(methodMetadata, loadBalancerCommand, reactiveClient);
+                String serviceName = extractServiceName(target.url());
+                return new RibbonReactiveClient(methodMetadata,
+                        loadBalancerCommandFactory.apply(serviceName), reactiveClient);
             };
+        }
+
+        private String extractServiceName(String url){
+            try {
+                return new URI(url).getHost();
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException("Can't extract service name from url", e);
+            }
         }
 
         @Override
@@ -91,6 +137,11 @@ public class CloudReactiveFeign extends ReactiveFeign {
             return this;
         }
 
+        public Builder<T> requestInterceptor(ReactiveHttpRequestInterceptor requestInterceptor) {
+            super.requestInterceptor(requestInterceptor);
+            return this;
+        }
+
         @Override
         public Builder<T> decode404() {
             super.decode404();
@@ -98,8 +149,28 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         @Override
-        public Builder<T> errorDecoder(final ErrorDecoder errorDecoder) {
-            super.errorDecoder(errorDecoder);
+        public Builder<T> statusHandler(ReactiveStatusHandler statusHandler) {
+            super.statusHandler(statusHandler);
+            return this;
+        }
+
+        @Override
+        public Builder<T> throwOnStatusCode(Predicate<HttpStatus> statusPredicate,
+                                                          BiFunction<String, ClientResponse, Throwable> errorFunction){
+            super.throwOnStatusCode(statusPredicate, errorFunction);
+            return this;
+        }
+
+        @Override
+        public Builder<T> retryWhen(
+                Function<Flux<Throwable>, Publisher<Throwable>> retryFunction) {
+            super.retryWhen(retryFunction);
+            return this;
+        }
+
+        @Override
+        public Builder<T> retryWhen(ReactiveRetryPolicy retryPolicy){
+            super.retryWhen(retryPolicy);
             return this;
         }
 
