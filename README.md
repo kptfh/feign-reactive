@@ -95,12 +95,12 @@ Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
     <dependency>
         <groupId>io.github.reactivefeign</groupId>
         <artifactId>feign-reactive-core</artifactId>
-        <version>0.5.0</version>
+        <version>0.6.0</version>
     </dependency>
     <dependency>
         <groupId>io.github.reactivefeign</groupId>
         <artifactId>feign-reactive-cloud</artifactId>
-        <version>0.5.0</version>
+        <version>0.6.0</version>
     </dependency>
     ...
 </dependencies>
