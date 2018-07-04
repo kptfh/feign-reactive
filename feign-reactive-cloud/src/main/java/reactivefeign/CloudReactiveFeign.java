@@ -57,8 +57,7 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         public Builder<T> setFallback(T fallback) {
-            setFallbackFactory(throwable -> fallback);
-            return this;
+            return setFallbackFactory(throwable -> fallback);
         }
 
         public Builder<T> setFallbackFactory(Function<Throwable, ? extends T> fallbackFactory) {
@@ -67,11 +66,10 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         public Builder<T> enableLoadBalancer(){
-            setLoadBalancerCommandFactory(serviceName ->
+            return setLoadBalancerCommandFactory(serviceName ->
                     LoadBalancerCommand.builder()
                             .withLoadBalancer(ClientFactory.getNamedLoadBalancer(serviceName))
                             .build());
-            return this;
         }
 
         public Builder<T> enableLoadBalancer(RetryHandler retryHandler){
@@ -80,12 +78,11 @@ public class CloudReactiveFeign extends ReactiveFeign {
                 throw new IllegalArgumentException("Use retryWhen(ReactiveRetryPolicy retryPolicy) " +
                         "as it allow to configure retry delays (backoff)");
             }
-            setLoadBalancerCommandFactory(serviceName ->
+            return setLoadBalancerCommandFactory(serviceName ->
                     LoadBalancerCommand.builder()
                     .withLoadBalancer(ClientFactory.getNamedLoadBalancer(serviceName))
                     .withRetryHandler(retryHandler)
                     .build());
-            return this;
         }
 
 
