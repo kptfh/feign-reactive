@@ -209,8 +209,7 @@ public class ReactiveFeign {
 		}
 
 		public Builder<T> retryWhen(ReactiveRetryPolicy retryPolicy){
-			retryWhen(retryPolicy.toRetryFunction());
-			return this;
+			return retryWhen(retryPolicy.toRetryFunction());
 		}
 
 		/**
