@@ -4,7 +4,7 @@
 
 Use Feign with Spring WebFlux
 
-# Plan to proceed with Spring auto configuration after 30 stars :) 
+# Can't proceed with Spring because of this issue [Consider releasing artifact](https://github.com/OpenFeign/feign-reactive/issues/15) :(
 
 
 ## Overview
