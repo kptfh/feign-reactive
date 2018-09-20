@@ -13,6 +13,15 @@ Implementation of Feign on Spring WebClient. Brings you the best of two worlds t
 concise syntax of Feign to write client side API on fast, asynchronous and
 non-blocking HTTP client of Spring WebClient.
 
+## Modules
+  
+  **_feign-reactor-core_** : base classes and interfaces that should allow to implement alternative reactor Feign
+  
+  **_feign-reactor-webclient_** : Spring WebClient based implementation of reactor Feign 
+  
+  **_feign-reactor-cloud_** : Spring Cloud implementation of reactor Feign (Ribbon/Hystrix)
+  
+
 ## Usage
 
 Write Feign API as usual, but every method of interface
@@ -92,15 +101,19 @@ Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 ...
 <dependencies>
     ...
+    
     <dependency>
         <groupId>io.github.reactivefeign</groupId>
-        <artifactId>feign-reactive-core</artifactId>
-        <version>0.6.1</version>
+        <artifactId>feign-reactor-cloud</artifactId>
+        <version>1.0.0</version>
     </dependency>
+    
+    or if you don't need cloud specific functionality
+    
     <dependency>
         <groupId>io.github.reactivefeign</groupId>
-        <artifactId>feign-reactive-cloud</artifactId>
-        <version>0.6.1</version>
+        <artifactId>feign-reactor-cloud</artifactId>
+        <version>1.0.0</version>
     </dependency>
     ...
 </dependencies>

@@ -3,14 +3,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.reactivefeign</groupId>
-    <artifactId>feign-reactive</artifactId>
-    <version>0.6.1</version>
+    <artifactId>feign-reactor</artifactId>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>feign-reactive-core</module>
-        <module>feign-reactive-cloud</module>
-        <module>feign-reactive-load-tests</module>
+        <module>feign-reactor-core</module>
+        <module>feign-reactor-webclient</module>
+        <module>feign-reactor-cloud</module>
+        <!--<module>feign-reactive-load-tests</module>-->
     </modules>
 
     <name>feign-reactive</name>
@@ -57,7 +58,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+        <reactor.version>3.1.8.RELEASE</reactor.version>
         <feign.version>9.5.1</feign.version>
+        <slf4j.version>1.7.25</slf4j.version>
+        <commons-httpclient.version>3.1</commons-httpclient.version>
+
         <ribbon-version>2.1.1</ribbon-version>
         <hystrix.version>1.4.26</hystrix.version>
         <archaius.version>0.6.6</archaius.version>
@@ -66,9 +71,12 @@
         <junit.version>4.12</junit.version>
         <assertj.version>3.9.0</assertj.version>
         <wiremock.version>2.15.0</wiremock.version>
-        <okhttp3.version>3.6.0</okhttp3.version>
         <jackson.version>2.9.3</jackson.version>
         <slf4j-log4j12.version>1.8.0-beta0</slf4j-log4j12.version>
+        <hamcrest.version>1.3</hamcrest.version>
+        <awaitility.version>3.0.0</awaitility.version>
+        <mockito.version>1.9.5</mockito.version>
+        <log4j.version>2.11.1</log4j.version>
         <guava.version>20.0</guava.version>
 
         <!-- Plugins -->
@@ -91,12 +99,17 @@
         <dependencies>
             <dependency>
                 <groupId>io.github.reactivefeign</groupId>
-                <artifactId>feign-reactive-core</artifactId>
+                <artifactId>feign-reactor-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.reactivefeign</groupId>
-                <artifactId>feign-reactive-cloud</artifactId>
+                <artifactId>feign-reactor-webclient</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.reactivefeign</groupId>
+                <artifactId>feign-reactor-cloud</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -104,10 +117,44 @@
                 <artifactId>feign-core</artifactId>
                 <version>${feign.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-core</artifactId>
+                <version>${reactor.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-test</artifactId>
+                <version>${reactor.version}</version>
+                <scope>test</scope>
+            </dependency>
+
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-httpclient</groupId>
+                <artifactId>commons-httpclient</artifactId>
+                <version>${commons-httpclient.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+                <version>${awaitility.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -124,6 +171,60 @@
                 <version>${wiremock.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!--cloud part-->
+            <dependency>
+                <groupId>com.netflix.hystrix</groupId>
+                <artifactId>hystrix-core</artifactId>
+                <version>${hystrix.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.netflix.archaius</groupId>
+                <artifactId>archaius-core</artifactId>
+                <version>${archaius.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.netflix.ribbon</groupId>
+                <artifactId>ribbon-core</artifactId>
+                <version>${ribbon-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.netflix.ribbon</groupId>
+                <artifactId>ribbon-loadbalancer</artifactId>
+                <version>${ribbon-version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
