@@ -50,6 +50,7 @@ public class WebReactiveFeign {
           setWebClient(webClient);
       }
 
+      @Override
       public Builder<T> options(ReactiveOptions options) {
           if (!options.isEmpty()) {
               ReactorClientHttpConnector connector = new ReactorClientHttpConnector(

@@ -11,13 +11,14 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package reactivefeign;
+package reactivefeign.methodhandler;
 
+import feign.InvocationHandlerFactory;
 import feign.MethodMetadata;
 import feign.Target;
 import org.reactivestreams.Publisher;
+import reactivefeign.client.ReactiveHttpClient;
 import reactivefeign.client.ReactiveHttpRequest;
-import reactivefeign.publisher.PublisherClientFactory;
 import reactivefeign.publisher.PublisherHttpClient;
 import reactivefeign.utils.Pair;
 import reactor.core.publisher.Mono;
@@ -40,9 +41,11 @@ import static reactivefeign.utils.MultiValueMapUtils.*;
 /**
  * Method handler for asynchronous HTTP requests via {@link PublisherHttpClient}.
  *
+ * Transforms method invocation into request that executed by {@link ReactiveHttpClient}.
+ *
  * @author Sergii Karpenko
  */
-public class PublisherClientMethodHandler implements ReactiveMethodHandler {
+public class PublisherClientMethodHandler implements InvocationHandlerFactory.MethodHandler {
 
   private final Target target;
   private final MethodMetadata methodMetadata;
@@ -53,7 +56,7 @@ public class PublisherClientMethodHandler implements ReactiveMethodHandler {
   private final Map<String, List<Function<Map<String, ?>, String>>> queryExpanders;
   private final Type returnPublisherType;
 
-  private PublisherClientMethodHandler(Target target,
+  public PublisherClientMethodHandler(Target target,
                                        MethodMetadata methodMetadata,
                                        PublisherHttpClient publisherClient) {
     this.target = checkNotNull(target, "target must be not null");
@@ -182,14 +185,17 @@ public class PublisherClientMethodHandler implements ReactiveMethodHandler {
 
   protected Publisher<Object> body(Object[] argv) {
     if (methodMetadata.bodyIndex() != null) {
-      Object body = argv[methodMetadata.bodyIndex()];
-      if (body instanceof Publisher) {
-        return (Publisher<Object>) body;
-      } else {
-        return Mono.just(body);
-      }
+      return body(argv[methodMetadata.bodyIndex()]);
     } else {
       return Mono.empty();
+    }
+  }
+
+  protected Publisher<Object> body(Object body) {
+    if (body instanceof Publisher) {
+      return (Publisher<Object>) body;
+    } else {
+      return Mono.just(body);
     }
   }
 
@@ -239,21 +245,5 @@ public class PublisherClientMethodHandler implements ReactiveMethodHandler {
 
     return traceData -> chunks.stream().map(chunk -> chunk.apply(traceData))
         .collect(Collectors.joining());
-  }
-
-  public static class Factory implements ReactiveMethodHandlerFactory {
-    private final PublisherClientFactory publisherClientFactory;
-
-    public Factory(final PublisherClientFactory publisherClientFactory) {
-      this.publisherClientFactory = checkNotNull(publisherClientFactory, "client must not be null");
-    }
-
-    @Override
-    public PublisherClientMethodHandler create(Target target,
-                                               final MethodMetadata metadata) {
-
-      return new PublisherClientMethodHandler(target, metadata,
-          publisherClientFactory.apply(metadata));
-    }
   }
 }

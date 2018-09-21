@@ -5,6 +5,7 @@ import feign.MethodMetadata;
 import feign.Target;
 import org.reactivestreams.Publisher;
 import org.springframework.lang.Nullable;
+import reactivefeign.methodhandler.MethodHandler;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
@@ -22,17 +23,17 @@ import static feign.Util.checkNotNull;
 /**
  * @author Sergii Karpenko
  */
-public class HystrixMethodHandler implements ReactiveMethodHandler {
+public class HystrixMethodHandler implements MethodHandler {
 
     private final Method method;
     private final Type returnPublisherType;
-    private final ReactiveMethodHandler methodHandler;
+    private final MethodHandler methodHandler;
     private final Function<Throwable, Object> fallbackFactory;
     private final HystrixObservableCommand.Setter hystrixObservableCommandSetter;
 
     private HystrixMethodHandler(
             Target target, MethodMetadata methodMetadata,
-            ReactiveMethodHandler methodHandler,
+            MethodHandler methodHandler,
             CloudReactiveFeign.SetterFactory setterFactory,
             @Nullable
                     Function<Throwable, Object> fallbackFactory) {
@@ -87,12 +88,12 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
         return method.invoke(target, argv);
     }
 
-    public static class Factory implements ReactiveMethodHandlerFactory {
-        private final ReactiveMethodHandlerFactory methodHandlerFactory;
+    public static class Factory implements MethodHandlerFactory {
+        private final MethodHandlerFactory methodHandlerFactory;
         private final CloudReactiveFeign.SetterFactory commandSetterFactory;
         private final Function<Throwable, Object> fallbackFactory;
 
-        public Factory(ReactiveMethodHandlerFactory methodHandlerFactory,
+        public Factory(MethodHandlerFactory methodHandlerFactory,
                        CloudReactiveFeign.SetterFactory commandSetterFactory,
                        @Nullable Function<Throwable, Object> fallbackFactory) {
             this.methodHandlerFactory = checkNotNull(methodHandlerFactory, "methodHandlerFactory must not be null");
@@ -101,10 +102,10 @@ public class HystrixMethodHandler implements ReactiveMethodHandler {
         }
 
         @Override
-        public ReactiveMethodHandler create(final Target target, final MethodMetadata metadata) {
+        public MethodHandler create(final Target target, final MethodMetadata metadata, Method method) {
             return new HystrixMethodHandler(
                     target, metadata,
-                    methodHandlerFactory.create(target, metadata),
+                    methodHandlerFactory.create(target, metadata, configKeyToMethod.get(md.configKey())),
                     commandSetterFactory,
                     fallbackFactory);
         }

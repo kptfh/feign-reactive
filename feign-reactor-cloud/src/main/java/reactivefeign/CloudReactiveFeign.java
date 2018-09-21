@@ -106,14 +106,14 @@ public class CloudReactiveFeign extends ReactiveFeign {
         }
 
         @Override
-        protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
-            ReactiveMethodHandlerFactory reactiveMethodHandlerFactory = super.buildReactiveMethodHandlerFactory();
+        protected MethodHandlerFactory buildReactiveMethodHandlerFactory() {
+            MethodHandlerFactory methodHandlerFactory = super.buildReactiveMethodHandlerFactory();
             return commandSetterFactory != null || fallbackFactory != null
                     ? new HystrixMethodHandler.Factory(
-                    reactiveMethodHandlerFactory,
+					methodHandlerFactory,
                     ofNullable(commandSetterFactory).orElse(new DefaultSetterFactory()),
                     (Function<Throwable, Object>) fallbackFactory)
-                    : reactiveMethodHandlerFactory;
+                    : methodHandlerFactory;
         }
 
         @Override
