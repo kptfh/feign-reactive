@@ -14,14 +14,16 @@
 package reactivefeign;
 
 import feign.*;
-import feign.InvocationHandlerFactory.MethodHandler;
 import feign.codec.ErrorDecoder;
 import org.reactivestreams.Publisher;
+import reactivefeign.methodhandler.DefaultMethodHandler;
 import reactivefeign.client.ReactiveHttpClient;
 import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.client.ReactiveHttpResponse;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.client.statushandler.ReactiveStatusHandlers;
+import reactivefeign.methodhandler.PublisherClientMethodHandler;
+import reactivefeign.methodhandler.MethodHandler;
 import reactivefeign.publisher.PublisherClientFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,6 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static feign.Util.checkNotNull;
 import static feign.Util.isDefault;
@@ -66,9 +70,9 @@ public class ReactiveFeign {
 
   @SuppressWarnings("unchecked")
   public <T> T newInstance(Target<T> target) {
-    final Map<String, MethodHandler> nameToHandler = targetToHandlersByName
+    final Map<String, InvocationHandlerFactory.MethodHandler> nameToHandler = targetToHandlersByName
         .apply(target);
-    final Map<Method, MethodHandler> methodToHandler = new LinkedHashMap<>();
+    final Map<Method, InvocationHandlerFactory.MethodHandler> methodToHandler = new LinkedHashMap<>();
     final List<DefaultMethodHandler> defaultMethodHandlers = new LinkedList<>();
 
     for (final Method method : target.type().getMethods()) {
@@ -112,6 +116,8 @@ public class ReactiveFeign {
 
     protected Builder(){
     }
+
+    abstract public Builder<T> options(ReactiveOptions options);
 
     public Builder<T> clientFactory(Function<MethodMetadata, ReactiveHttpClient> clientFactory) {
       this.clientFactory = clientFactory;
@@ -204,7 +210,7 @@ public class ReactiveFeign {
       return new ReactiveFeign(handlersByName, invocationHandlerFactory);
     }
 
-    protected ReactiveMethodHandlerFactory buildReactiveMethodHandlerFactory() {
+    protected MethodHandlerFactory buildReactiveMethodHandlerFactory() {
       return new PublisherClientMethodHandler.Factory(buildReactiveClientFactory());
     }
 
@@ -246,21 +252,37 @@ public class ReactiveFeign {
 
   public static final class ParseHandlersByName {
     private final Contract contract;
-    private final ReactiveMethodHandlerFactory factory;
+    private final MethodHandlerFactory factory;
 
-    ParseHandlersByName(final Contract contract,
-        final ReactiveMethodHandlerFactory factory) {
+    ParseHandlersByName(final Contract contract, final MethodHandlerFactory factory) {
       this.contract = contract;
       this.factory = factory;
     }
 
-    Map<String, MethodHandler> apply(final Target target) {
-      final List<MethodMetadata> metadata = contract
-          .parseAndValidatateMetadata(target.type());
-      final Map<String, MethodHandler> result = new LinkedHashMap<>();
+    Map<String, InvocationHandlerFactory.MethodHandler> apply(final Target target) {
+      final List<MethodMetadata> metadata = contract.parseAndValidatateMetadata(target.type());
+      Map<String, Method> configKeyToMethod = Stream.of(target.type().getMethods())
+              .collect(Collectors.toMap(
+                      method -> Feign.configKey(target.type(), method),
+                      method -> method
+              ));
+
+//      for (final Method method : ) {
+//        if (isDefault(method)) {
+//          final DefaultMethodHandler handler = new DefaultMethodHandler(method);
+//          defaultMethodHandlers.add(handler);
+//          methodToHandler.put(method, handler);
+//        } else {
+//          methodToHandler.put(method,
+//                  nameToHandler.get(Feign.configKey(target.type(), method)));
+//        }
+//      }
+
+      final Map<String, InvocationHandlerFactory.MethodHandler> result = new LinkedHashMap<>();
 
       for (final MethodMetadata md : metadata) {
-        ReactiveMethodHandler methodHandler = factory.create(target, md);
+        InvocationHandlerFactory.MethodHandler methodHandler = factory.create(
+                target, md, configKeyToMethod.get(md.configKey()));
         result.put(md.configKey(), methodHandler);
       }
 

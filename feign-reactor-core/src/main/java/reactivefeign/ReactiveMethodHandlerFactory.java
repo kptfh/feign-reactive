@@ -1,22 +1,36 @@
-/**
- * Copyright 2018 The Feign Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
 package reactivefeign;
 
+import feign.InvocationHandlerFactory;
 import feign.MethodMetadata;
 import feign.Target;
+import reactivefeign.methodhandler.PublisherClientMethodHandler;
+import reactivefeign.methodhandler.reactor.ReactorMethodHandler;
+import reactivefeign.publisher.PublisherClientFactory;
 
-public interface ReactiveMethodHandlerFactory {
+import java.lang.reflect.Method;
 
-  ReactiveMethodHandler create(final Target target, final MethodMetadata metadata);
+import static feign.Util.checkNotNull;
+import static feign.Util.isDefault;
+import static reactivefeign.utils.FeignUtils.returnPublisherType;
+
+public class ReactiveMethodHandlerFactory implements MethodHandlerFactory{
+
+	private final PublisherClientFactory publisherClientFactory;
+
+	public ReactiveMethodHandlerFactory(final PublisherClientFactory publisherClientFactory) {
+		this.publisherClientFactory = checkNotNull(publisherClientFactory, "client must not be null");
+	}
+
+	@Override
+	public InvocationHandlerFactory.MethodHandler create(
+			Target target, final MethodMetadata metadata, Method method) {
+
+		InvocationHandlerFactory.MethodHandler methodHandler = isDefault(method)
+				?
+
+		return new ReactorMethodHandler(
+				new PublisherClientMethodHandler(target, metadata,
+						publisherClientFactory.apply(metadata)),
+				returnPublisherType(metadata));
+	}
 }

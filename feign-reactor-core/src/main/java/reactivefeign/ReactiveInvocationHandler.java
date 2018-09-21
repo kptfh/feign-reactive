@@ -64,29 +64,8 @@ public final class ReactiveInvocationHandler implements InvocationHandler {
   }
 
   @Override
-  public Object invoke(final Object proxy, final Method method, final Object[] args)
-      throws Throwable {
-    if (method.getDeclaringClass().equals(Object.class)) {
-      return dispatch.get(method).invoke(args);
-    } else {
-      return invokeRequestMethod(method, args);
-    }
-  }
-
-  /**
-   * Transforms method invocation into request that executed by {@link ReactiveHttpClient}.
-   *
-   * @param method invoked method
-   * @param args provided arguments to method
-   * @return Publisher with decoded result
-   */
-  private Publisher invokeRequestMethod(final Method method, final Object[] args) {
-    try {
-      return (Publisher) dispatch.get(method).invoke(args);
-    } catch (Throwable throwable) {
-      return method.getReturnType() == Mono.class ? Mono.error(throwable)
-          : Flux.error(throwable);
-    }
+  public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+    return dispatch.get(method).invoke(args);
   }
 
   @Override

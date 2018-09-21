@@ -14,14 +14,12 @@
 package reactivefeign;
 
 import feign.InvocationHandlerFactory;
-import org.reactivestreams.Publisher;
+import feign.MethodMetadata;
+import feign.Target;
 
-/**
- * @author Sergii Karpenko
- */
-public interface ReactiveMethodHandler extends InvocationHandlerFactory.MethodHandler {
+import java.lang.reflect.Method;
 
-  @Override
-  Publisher<Object> invoke(final Object[] argv);
+public interface MethodHandlerFactory {
 
+  InvocationHandlerFactory.MethodHandler create(final Target target, final MethodMetadata metadata, Method method);
 }

@@ -11,9 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package reactivefeign;
-
-import feign.InvocationHandlerFactory.MethodHandler;
+package reactivefeign.methodhandler;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -24,7 +22,7 @@ import java.lang.reflect.Method;
  * Handles default methods by directly invoking the default method code on the interface. The bindTo
  * method must be called on the result before invoke is called.
  */
-final class DefaultMethodHandler implements MethodHandler {
+public final class DefaultMethodHandler implements MethodHandler {
   // Uses Java 7 MethodHandle based reflection. As default methods will only exist when
   // run on a Java 8 JVM this will not affect use on legacy JVMs.
   private final MethodHandle unboundHandle;
@@ -50,6 +48,7 @@ final class DefaultMethodHandler implements MethodHandler {
    * was called on the proxy object. Must be called once and only once for a given instance of
    * DefaultMethodHandler
    */
+  @Override
   public void bindTo(Object proxy) {
     if (handle != null) {
       throw new IllegalStateException(
