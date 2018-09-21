@@ -64,10 +64,6 @@ public class ReactiveFeign {
     this.factory = factory;
   }
 
-  public static <T> Builder<T> builder() {
-    return new Builder<>();
-  }
-
   @SuppressWarnings("unchecked")
   public <T> T newInstance(Target<T> target) {
     final Map<String, MethodHandler> nameToHandler = targetToHandlersByName
@@ -100,7 +96,7 @@ public class ReactiveFeign {
   /**
    * ReactiveFeign builder.
    */
-  public static class Builder<T> {
+  public abstract static class Builder<T> {
     protected Contract contract = new ReactiveDelegatingContract(new Contract.Default());
     protected Function<MethodMetadata, ReactiveHttpClient> clientFactory;
     protected ReactiveHttpRequestInterceptor requestInterceptor;
