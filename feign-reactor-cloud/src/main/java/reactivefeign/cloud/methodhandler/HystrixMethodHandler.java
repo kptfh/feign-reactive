@@ -86,12 +86,10 @@ public class HystrixMethodHandler implements MethodHandler {
             }
         }.toObservable();
 
-        Publisher<Object> publisher = RxReactiveStreams.toPublisher(observable);
-
         if(returnPublisherType == Mono.class){
-            return Mono.from(publisher);
+            return Mono.from(RxReactiveStreams.toPublisher(observable.toSingle()));
         } else if(returnPublisherType == Flux.class){
-            return Flux.from(publisher);
+            return Flux.from(RxReactiveStreams.toPublisher(observable));
         } else {
             throw new IllegalArgumentException("Unknown returnPublisherType: " + returnPublisherType);
         }

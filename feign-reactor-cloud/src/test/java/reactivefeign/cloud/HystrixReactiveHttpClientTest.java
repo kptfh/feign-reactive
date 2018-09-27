@@ -1,10 +1,7 @@
 package reactivefeign.cloud;
 
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixObservableCommand;
+import com.netflix.hystrix.*;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import feign.MethodMetadata;
 import feign.Target;
@@ -17,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -34,6 +32,7 @@ public class HystrixReactiveHttpClientTest {
     public static final int SLEEP_WINDOW = 100;
     public static final int VOLUME_THRESHOLD = 1;
     public static final String FALLBACK = "fallback";
+    public static final String SUCCESS = "success!";
     @ClassRule
     public static WireMockClassRule server = new WireMockClassRule(wireMockConfig().dynamicPort());
 
@@ -41,6 +40,8 @@ public class HystrixReactiveHttpClientTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     private static int testNo = 0;
+
+    private AtomicReference<HystrixCommandKey> lastCommandKey = new AtomicReference<>();
 
     @Before
     public void resetServers() {
@@ -92,11 +93,11 @@ public class HystrixReactiveHttpClientTest {
     public void shouldOpenCircuitBreakerAndCloseAfterSleepTime() throws InterruptedException {
 
         int callsNo = VOLUME_THRESHOLD + 1;
-        LoadBalancingReactiveHttpClientTest.mockSuccessAfterSeveralAttempts(server, "/", callsNo, SC_SERVICE_UNAVAILABLE,
+        LoadBalancingReactiveHttpClientTest.mockSuccessAfterSeveralAttempts(server, "/", VOLUME_THRESHOLD, SC_SERVICE_UNAVAILABLE,
                 aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("success!"));
+                        .withBody(SUCCESS));
 
         LoadBalancingReactiveHttpClientTest.TestInterface client = CloudReactiveFeign.<LoadBalancingReactiveHttpClientTest.TestInterface>builder()
                 .setHystrixCommandSetterFactory(getSetterFactory(testNo))
@@ -114,11 +115,17 @@ public class HystrixReactiveHttpClientTest {
         assertThat(server.getAllServeEvents().size()).isLessThan(callsNo);
         Throwable firstError = (Throwable) results.get(0);
         assertThat(firstError).isInstanceOf(HystrixRuntimeException.class);
-        assertThat(firstError.getMessage()).contains("and no fallback available");
+        assertThat(firstError.getMessage())
+                .contains("and no fallback available")
+                .doesNotContain("short-circuited");
+        assertThat(HystrixCircuitBreaker.Factory.getInstance(lastCommandKey.get())
+                .isOpen())
+                .isTrue();
 
         Throwable lastError = (Throwable) results.get(results.size() - 1);
         assertThat(lastError).isInstanceOf(HystrixRuntimeException.class);
-        assertThat(lastError.getMessage()).contains("short-circuited and no fallback available.");
+        assertThat(lastError.getMessage())
+                .contains("short-circuited and no fallback available.");
 
         //wait to circuit breaker get closed again
         Thread.sleep(SLEEP_WINDOW);
@@ -132,21 +139,22 @@ public class HystrixReactiveHttpClientTest {
             }
         }).collect(Collectors.toList());
 
-        Throwable firstErrorAfterSleep = (Throwable) resultsAfterSleep.get(0);
-        assertThat(firstErrorAfterSleep).isInstanceOf(HystrixRuntimeException.class);
-        assertThat(firstErrorAfterSleep.getMessage()).contains("and no fallback available");
-
+        assertThat(resultsAfterSleep).containsOnly(SUCCESS);
+        assertThat(HystrixCircuitBreaker.Factory.getInstance(lastCommandKey.get())
+                .isOpen())
+                .isFalse();
     }
 
-    static CloudReactiveFeign.SetterFactory getSetterFactory(int testNo) {
+    CloudReactiveFeign.SetterFactory getSetterFactory(int testNo) {
         return new CloudReactiveFeign.SetterFactory() {
             @Override
             public HystrixObservableCommand.Setter create(Target<?> target, MethodMetadata methodMetadata) {
                 String groupKey = target.name();
-                String commandKey = methodMetadata.configKey();
+                HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey(methodMetadata.configKey() + testNo);
+                lastCommandKey.set(commandKey);
                 return HystrixObservableCommand.Setter
                         .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
-                        .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey + testNo))
+                        .andCommandKey(commandKey)
                         .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
                                 .withCircuitBreakerRequestVolumeThreshold(VOLUME_THRESHOLD)
                                 .withExecutionTimeoutEnabled(false)
