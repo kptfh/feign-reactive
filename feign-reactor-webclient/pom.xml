@@ -4,7 +4,7 @@
 
     <parent>
         <groupId>io.github.reactivefeign</groupId>
-        <artifactId>feign-reactive</artifactId>
+        <artifactId>feign-reactor</artifactId>
         <version>1.0.0</version>
     </parent>
 
@@ -14,7 +14,6 @@
         <dependency>
             <groupId>io.github.reactivefeign</groupId>
             <artifactId>feign-reactor-core</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
         <dependency>

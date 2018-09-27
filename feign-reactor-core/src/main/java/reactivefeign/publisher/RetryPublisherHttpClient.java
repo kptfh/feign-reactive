@@ -14,14 +14,10 @@
 package reactivefeign.publisher;
 
 import feign.MethodMetadata;
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactivefeign.client.ReactiveHttpRequest;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import java.lang.reflect.Type;
 import java.util.function.Function;
 
 import static reactivefeign.utils.FeignUtils.methodTag;
@@ -31,22 +27,15 @@ import static reactivefeign.utils.FeignUtils.methodTag;
  *
  * @author Sergii Karpenko
  */
-public class RetryPublisherHttpClient implements PublisherHttpClient {
+abstract public class RetryPublisherHttpClient<P extends PublisherHttpClient> implements PublisherHttpClient {
 
   private static final Logger logger = LoggerFactory.getLogger(RetryPublisherHttpClient.class);
 
   private final String feignMethodTag;
-  private final PublisherHttpClient publisherClient;
-  private final Function<Flux<Throwable>, Flux<?>> retryFunction;
+  protected final P publisherClient;
+  protected final Function<Flux<Throwable>, Flux<?>> retryFunction;
 
-  public static PublisherHttpClient retry(
-          PublisherHttpClient publisherClient,
-          MethodMetadata methodMetadata,
-          Function<Flux<Throwable>, Flux<Throwable>> retryFunction) {
-    return new RetryPublisherHttpClient(publisherClient, methodMetadata, retryFunction);
-  }
-
-  private RetryPublisherHttpClient(PublisherHttpClient publisherClient,
+  protected RetryPublisherHttpClient(P publisherClient,
                                    MethodMetadata methodMetadata,
                                    Function<Flux<Throwable>, Flux<Throwable>> retryFunction) {
     this.publisherClient = publisherClient;
@@ -54,24 +43,14 @@ public class RetryPublisherHttpClient implements PublisherHttpClient {
     this.retryFunction = wrapWithLog(retryFunction, feignMethodTag);
   }
 
-  @Override
-  public Publisher<Object> executeRequest(ReactiveHttpRequest request, Type publisherType) {
-    Publisher<Object> response = publisherClient.executeRequest(request, publisherType);
-    if (publisherType == Mono.class) {
-      return ((Mono<Object>) response).retryWhen(retryFunction).onErrorMap(outOfRetries());
-    } else {
-      return ((Flux<Object>) response).retryWhen(retryFunction).onErrorMap(outOfRetries());
-    }
-  }
-
-  private Function<Throwable, Throwable> outOfRetries() {
+  protected Function<Throwable, Throwable> outOfRetries() {
     return throwable -> {
       logger.debug("[{}]---> USED ALL RETRIES", feignMethodTag, throwable);
       return new OutOfRetriesException(throwable, feignMethodTag);
     };
   }
 
-  private static Function<Flux<Throwable>, Flux<?>> wrapWithLog(
+  protected static Function<Flux<Throwable>, Flux<?>> wrapWithLog(
           Function<Flux<Throwable>, Flux<Throwable>> retryFunction,
           String feignMethodTag) {
     return throwableFlux -> retryFunction.apply(throwableFlux)

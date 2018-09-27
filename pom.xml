@@ -11,6 +11,7 @@
         <module>feign-reactor-core</module>
         <module>feign-reactor-webclient</module>
         <module>feign-reactor-cloud</module>
+        <module>feign-reactor-rx2</module>
     </modules>
 
     <name>feign-reactive</name>
@@ -85,6 +86,8 @@
         <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
         <versions-maven-plugin.version>2.3</versions-maven-plugin.version>
+        <reactor-adapter.version>3.1.6.RELEASE</reactor-adapter.version>
+        <rxjava2.version>2.2.2</rxjava2.version>
     </properties>
 
     <parent>
@@ -131,16 +134,54 @@
             </dependency>
 
             <dependency>
+                <groupId>commons-httpclient</groupId>
+                <artifactId>commons-httpclient</artifactId>
+                <version>${commons-httpclient.version}</version>
+            </dependency>
+
+            <!--Cloud part-->
+            <dependency>
+                <groupId>com.netflix.hystrix</groupId>
+                <artifactId>hystrix-core</artifactId>
+                <version>${hystrix.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.netflix.archaius</groupId>
+                <artifactId>archaius-core</artifactId>
+                <version>${archaius.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.netflix.ribbon</groupId>
+                <artifactId>ribbon-core</artifactId>
+                <version>${ribbon-version}</version>
+            </dependency>
+
+            <!--Rx2 part-->
+            <dependency>
+                <groupId>com.netflix.ribbon</groupId>
+                <artifactId>ribbon-loadbalancer</artifactId>
+                <version>${ribbon-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor.addons</groupId>
+                <artifactId>reactor-adapter</artifactId>
+                <version>${reactor-adapter.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.reactivex.rxjava2</groupId>
+                <artifactId>rxjava</artifactId>
+                <version>${rxjava2.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-httpclient</groupId>
-                <artifactId>commons-httpclient</artifactId>
-                <version>${commons-httpclient.version}</version>
             </dependency>
 
             <dependency>
@@ -197,31 +238,6 @@
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
                 <scope>test</scope>
-            </dependency>
-
-            <!--cloud part-->
-            <dependency>
-                <groupId>com.netflix.hystrix</groupId>
-                <artifactId>hystrix-core</artifactId>
-                <version>${hystrix.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.netflix.archaius</groupId>
-                <artifactId>archaius-core</artifactId>
-                <version>${archaius.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.netflix.ribbon</groupId>
-                <artifactId>ribbon-core</artifactId>
-                <version>${ribbon-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.netflix.ribbon</groupId>
-                <artifactId>ribbon-loadbalancer</artifactId>
-                <version>${ribbon-version}</version>
             </dependency>
 
         </dependencies>

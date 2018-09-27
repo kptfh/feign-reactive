@@ -70,36 +70,16 @@ abstract public class DefaultMethodTest {
         .verifyComplete();
   }
 
-  @Test
-  public void shouldWrapExceptionWithMono() {
+  @Test(expected = RuntimeException.class)
+  public void shouldNotWrapException() {
     IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
 
     IcecreamServiceApi client = builder()
         .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
-    Mono<IceCreamOrder> errorOrder = client.throwExceptionMono().onErrorReturn(
+    client.throwsException().onErrorReturn(
         throwable -> throwable.equals(IcecreamServiceApi.RUNTIME_EXCEPTION),
-        orderGenerated);
-
-    StepVerifier.create(errorOrder)
-        .expectNextMatches(equalsComparingFieldByFieldRecursively(orderGenerated))
-        .verifyComplete();
-  }
-
-  @Test
-  public void shouldWrapExceptionWithFlux() {
-    IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
-
-    IcecreamServiceApi client = builder()
-        .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
-
-    Flux<IceCreamOrder> errorOrder = client.throwExceptionFlux().onErrorReturn(
-        throwable -> throwable.equals(IcecreamServiceApi.RUNTIME_EXCEPTION),
-        orderGenerated);
-
-    StepVerifier.create(errorOrder)
-        .expectNextMatches(equalsComparingFieldByFieldRecursively(orderGenerated))
-        .verifyComplete();
+        orderGenerated).block();
   }
 
   @Test

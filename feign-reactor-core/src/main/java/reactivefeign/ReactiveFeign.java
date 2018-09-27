@@ -16,21 +16,24 @@ package reactivefeign;
 import feign.*;
 import feign.codec.ErrorDecoder;
 import org.reactivestreams.Publisher;
-import reactivefeign.methodhandler.DefaultMethodHandler;
 import reactivefeign.client.ReactiveHttpClient;
 import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.client.ReactiveHttpResponse;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.client.statushandler.ReactiveStatusHandlers;
-import reactivefeign.methodhandler.PublisherClientMethodHandler;
 import reactivefeign.methodhandler.MethodHandler;
-import reactivefeign.publisher.PublisherClientFactory;
+import reactivefeign.methodhandler.DefaultMethodHandler;
+import reactivefeign.methodhandler.MethodHandlerFactory;
+import reactivefeign.methodhandler.ReactiveMethodHandlerFactory;
+import reactivefeign.publisher.*;
+import reactivefeign.utils.Pair;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,8 +50,8 @@ import static reactivefeign.client.LoggerReactiveHttpClient.log;
 import static reactivefeign.client.ResponseMappers.ignore404;
 import static reactivefeign.client.ResponseMappers.mapResponse;
 import static reactivefeign.client.StatusHandlerReactiveHttpClient.handleStatus;
-import static reactivefeign.publisher.BasicPublisherHttpClient.toPublisher;
-import static reactivefeign.publisher.RetryPublisherHttpClient.retry;
+import static reactivefeign.utils.FeignUtils.returnPublisherType;
+import static reactivefeign.utils.MultiValueMapUtils.addOrdered;
 
 /**
  * Allows Feign interfaces to accept {@link Publisher} as body and return reactive {@link Mono} or
@@ -70,8 +73,7 @@ public class ReactiveFeign {
 
   @SuppressWarnings("unchecked")
   public <T> T newInstance(Target<T> target) {
-    final Map<String, InvocationHandlerFactory.MethodHandler> nameToHandler = targetToHandlersByName
-        .apply(target);
+    final Map<String, MethodHandler> nameToHandler = targetToHandlersByName.apply(target);
     final Map<Method, InvocationHandlerFactory.MethodHandler> methodToHandler = new LinkedHashMap<>();
     final List<DefaultMethodHandler> defaultMethodHandlers = new LinkedList<>();
 
@@ -82,13 +84,13 @@ public class ReactiveFeign {
         methodToHandler.put(method, handler);
       } else {
         methodToHandler.put(method,
-            nameToHandler.get(Feign.configKey(target.type(), method)));
+                nameToHandler.get(Feign.configKey(target.type(), method)));
       }
     }
 
     final InvocationHandler handler = factory.create(target, methodToHandler);
     T proxy = (T) Proxy.newProxyInstance(target.type().getClassLoader(),
-        new Class<?>[] {target.type()}, handler);
+            new Class<?>[] {target.type()}, handler);
 
     for (final DefaultMethodHandler defaultMethodHandler : defaultMethodHandlers) {
       defaultMethodHandler.bindTo(proxy);
@@ -101,7 +103,7 @@ public class ReactiveFeign {
    * ReactiveFeign builder.
    */
   public abstract static class Builder<T> {
-    protected Contract contract = new ReactiveDelegatingContract(new Contract.Default());
+    protected Contract contract;
     protected Function<MethodMetadata, ReactiveHttpClient> clientFactory;
     protected ReactiveHttpRequestInterceptor requestInterceptor;
     protected BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> responseMapper;
@@ -115,6 +117,7 @@ public class ReactiveFeign {
     private Function<Flux<Throwable>, Flux<Throwable>> retryFunction;
 
     protected Builder(){
+      contract(new Contract.Default());
     }
 
     abstract public Builder<T> options(ReactiveOptions options);
@@ -125,13 +128,21 @@ public class ReactiveFeign {
     }
 
     /**
-     * Sets contract. Provided contract will be wrapped in {@link ReactiveDelegatingContract}
+     * Sets contract. Provided contract will be wrapped in {@link ReactiveContract}
      *
      * @param contract contract.
      * @return this builder
      */
     public Builder<T> contract(final Contract contract) {
-      this.contract = new ReactiveDelegatingContract(contract);
+      this.contract = new ReactiveContract(contract);
+      return this;
+    }
+
+    public Builder<T> addHeaders(List<Pair<String, String>> headers) {
+      this.requestInterceptor = request -> {
+        headers.forEach(header -> addOrdered(request.headers(), header.left, header.right));
+        return request;
+      };
       return this;
     }
 
@@ -211,7 +222,7 @@ public class ReactiveFeign {
     }
 
     protected MethodHandlerFactory buildReactiveMethodHandlerFactory() {
-      return new PublisherClientMethodHandler.Factory(buildReactiveClientFactory());
+      return new ReactiveMethodHandlerFactory(buildReactiveClientFactory());
     }
 
     protected PublisherClientFactory buildReactiveClientFactory() {
@@ -240,13 +251,40 @@ public class ReactiveFeign {
           reactiveClient = handleStatus(reactiveClient, methodMetadata, statusHandler);
         }
 
-        reactivefeign.publisher.PublisherHttpClient publisherClient = toPublisher(reactiveClient);
+        reactivefeign.publisher.PublisherHttpClient publisherClient = toPublisher(reactiveClient, methodMetadata);
         if (retryFunction != null) {
           publisherClient = retry(publisherClient, methodMetadata, retryFunction);
         }
 
         return publisherClient;
       };
+    }
+
+    protected PublisherHttpClient retry(
+            PublisherHttpClient publisherClient,
+            MethodMetadata methodMetadata,
+            Function<Flux<Throwable>, Flux<Throwable>> retryFunction) {
+      Type returnPublisherType = returnPublisherType(methodMetadata);
+      if(returnPublisherType == Mono.class){
+        return new MonoRetryPublisherHttpClient(
+                (MonoPublisherHttpClient)publisherClient, methodMetadata, retryFunction);
+      } else if(returnPublisherType == Flux.class) {
+        return new FluxRetryPublisherHttpClient(
+                (FluxPublisherHttpClient)publisherClient, methodMetadata, retryFunction);
+      } else {
+        throw new IllegalArgumentException("Unknown returnPublisherType: " + returnPublisherType);
+      }
+    }
+
+    protected PublisherHttpClient toPublisher(ReactiveHttpClient reactiveHttpClient, MethodMetadata methodMetadata){
+      Type returnPublisherType = returnPublisherType(methodMetadata);
+      if(returnPublisherType == Mono.class){
+        return new MonoPublisherHttpClient(reactiveHttpClient);
+      } else if(returnPublisherType == Flux.class){
+        return new FluxPublisherHttpClient(reactiveHttpClient);
+      } else {
+        throw new IllegalArgumentException("Unknown returnPublisherType: " + returnPublisherType);
+      }
     }
   }
 
@@ -259,31 +297,28 @@ public class ReactiveFeign {
       this.factory = factory;
     }
 
-    Map<String, InvocationHandlerFactory.MethodHandler> apply(final Target target) {
-      final List<MethodMetadata> metadata = contract.parseAndValidatateMetadata(target.type());
+    Map<String, MethodHandler> apply(final Target target) {
+      Map<String, MethodMetadata> metadata = contract.parseAndValidatateMetadata(target.type())
+              .stream()
+              .collect(Collectors.toMap(
+                      MethodMetadata::configKey,
+                      md -> md
+              ));
       Map<String, Method> configKeyToMethod = Stream.of(target.type().getMethods())
               .collect(Collectors.toMap(
                       method -> Feign.configKey(target.type(), method),
                       method -> method
               ));
 
-//      for (final Method method : ) {
-//        if (isDefault(method)) {
-//          final DefaultMethodHandler handler = new DefaultMethodHandler(method);
-//          defaultMethodHandlers.add(handler);
-//          methodToHandler.put(method, handler);
-//        } else {
-//          methodToHandler.put(method,
-//                  nameToHandler.get(Feign.configKey(target.type(), method)));
-//        }
-//      }
+      final Map<String, MethodHandler> result = new LinkedHashMap<>();
 
-      final Map<String, InvocationHandlerFactory.MethodHandler> result = new LinkedHashMap<>();
-
-      for (final MethodMetadata md : metadata) {
-        InvocationHandlerFactory.MethodHandler methodHandler = factory.create(
-                target, md, configKeyToMethod.get(md.configKey()));
-        result.put(md.configKey(), methodHandler);
+      for (final Map.Entry<String, Method> entry : configKeyToMethod.entrySet()) {
+        String configKey = entry.getKey();
+        MethodMetadata md = metadata.get(configKey);
+        MethodHandler methodHandler = md != null
+                ? factory.create(target, md)
+                : factory.createDefault(entry.getValue());  //isDefault(entry.getValue())
+        result.put(configKey, methodHandler);
       }
 
       return result;

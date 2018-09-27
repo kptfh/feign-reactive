@@ -13,7 +13,6 @@
  */
 package reactivefeign.methodhandler;
 
-import feign.InvocationHandlerFactory;
 import feign.MethodMetadata;
 import feign.Target;
 import org.reactivestreams.Publisher;
@@ -45,7 +44,7 @@ import static reactivefeign.utils.MultiValueMapUtils.*;
  *
  * @author Sergii Karpenko
  */
-public class PublisherClientMethodHandler implements InvocationHandlerFactory.MethodHandler {
+public class PublisherClientMethodHandler implements MethodHandler {
 
   private final Target target;
   private final MethodMetadata methodMetadata;
@@ -54,7 +53,6 @@ public class PublisherClientMethodHandler implements InvocationHandlerFactory.Me
   private final Map<String, List<Function<Map<String, ?>, String>>> headerExpanders;
   private final Map<String, Collection<String>> queriesAll;
   private final Map<String, List<Function<Map<String, ?>, String>>> queryExpanders;
-  private final Type returnPublisherType;
 
   public PublisherClientMethodHandler(Target target,
                                        MethodMetadata methodMetadata,
@@ -72,8 +70,6 @@ public class PublisherClientMethodHandler implements InvocationHandlerFactory.Me
           .forEach(param -> add(queriesAll, param, "{" + param + "}"));
     }
     this.queryExpanders = buildExpanders(queriesAll);
-
-    this.returnPublisherType = returnPublisherType(methodMetadata);
   }
 
   @Override
@@ -82,7 +78,7 @@ public class PublisherClientMethodHandler implements InvocationHandlerFactory.Me
 
     final ReactiveHttpRequest request = buildRequest(argv);
 
-    return publisherClient.executeRequest(request, returnPublisherType);
+    return publisherClient.executeRequest(request);
   }
 
   protected ReactiveHttpRequest buildRequest(Object[] argv) {
@@ -200,7 +196,7 @@ public class PublisherClientMethodHandler implements InvocationHandlerFactory.Me
   }
 
   private static Map<String, List<Function<Map<String, ?>, String>>> buildExpanders(
-                                                                                    Map<String, Collection<String>> templates) {
+          Map<String, Collection<String>> templates) {
     Stream<Pair<String, String>> headersFlattened = templates.entrySet().stream()
         .flatMap(e -> e.getValue().stream()
             .map(v -> new Pair<>(e.getKey(), v)));
@@ -246,4 +242,5 @@ public class PublisherClientMethodHandler implements InvocationHandlerFactory.Me
     return traceData -> chunks.stream().map(chunk -> chunk.apply(traceData))
         .collect(Collectors.joining());
   }
+
 }

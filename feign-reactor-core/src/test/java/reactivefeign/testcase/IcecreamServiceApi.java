@@ -54,11 +54,7 @@ public interface IcecreamServiceApi {
     return findOrder(1);
   }
 
-  default Mono<IceCreamOrder> throwExceptionMono() {
-    throw RUNTIME_EXCEPTION;
-  }
-
-  default Flux<IceCreamOrder> throwExceptionFlux() {
+  default Mono<IceCreamOrder> throwsException() {
     throw RUNTIME_EXCEPTION;
   }
 }

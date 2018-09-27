@@ -16,7 +16,7 @@ package reactivefeign.testcase;
 import feign.Headers;
 import feign.Param;
 import feign.RequestLine;
-import reactivefeign.ReactiveDelegatingContract;
+import reactivefeign.ReactiveContract;
 import reactivefeign.testcase.domain.Bill;
 import reactivefeign.testcase.domain.Flavor;
 import reactivefeign.testcase.domain.IceCreamOrder;
@@ -28,7 +28,7 @@ import java.util.Collection;
 
 /**
  * API of an iceream web service with one method that doesn't returns {@link Mono} or {@link Flux}
- * and violates {@link ReactiveDelegatingContract}s rules.
+ * and violates {@link ReactiveContract}s rules.
  *
  * @author Sergii Karpenko
  */
