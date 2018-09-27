@@ -138,12 +138,18 @@ abstract public class SmokeTest {
   }
 
   @Test
-  public void testPayBill_success() {
+  public void testPayBill_success() throws JsonProcessingException {
 
     Bill bill = Bill.makeBill(new OrderGenerator().generate(30));
 
+    wireMockRule.stubFor(post(urlEqualTo("/icecream/bills/pay"))
+            .withRequestBody(equalTo(TestUtils.MAPPER.writeValueAsString(bill)))
+            .willReturn(aResponse().withStatus(200)
+                    .withHeader("Content-Type", "application/json")));
+
     Mono<Void> result = client.payBill(bill);
     StepVerifier.create(result)
+        .expectNextCount(0)
         .verifyComplete();
   }
 }

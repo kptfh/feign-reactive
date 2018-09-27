@@ -22,10 +22,12 @@ import org.junit.Test;
 import reactivefeign.testcase.IcecreamServiceApi;
 import reactivefeign.testcase.domain.IceCreamOrder;
 import reactivefeign.testcase.domain.OrderGenerator;
+import reactivefeign.utils.Pair;
 import reactor.test.StepVerifier;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static java.util.Collections.singletonList;
 import static reactivefeign.TestUtils.equalsComparingFieldByFieldRecursively;
 import static reactivefeign.utils.MultiValueMapUtils.addOrdered;
 
@@ -69,10 +71,7 @@ abstract public class RequestInterceptorTest {
         .verify();
 
     IcecreamServiceApi clientWithAuth = builder()
-        .requestInterceptor(request -> {
-          addOrdered(request.headers(), "Authorization", "Bearer mytoken123");
-          return request;
-        })
+        .addHeaders(singletonList(new Pair<>("Authorization", "Bearer mytoken123")))
         .target(IcecreamServiceApi.class,
             "http://localhost:" + wireMockRule.port());
 

@@ -48,7 +48,6 @@ public final class DefaultMethodHandler implements MethodHandler {
    * was called on the proxy object. Must be called once and only once for a given instance of
    * DefaultMethodHandler
    */
-  @Override
   public void bindTo(Object proxy) {
     if (handle != null) {
       throw new IllegalStateException(

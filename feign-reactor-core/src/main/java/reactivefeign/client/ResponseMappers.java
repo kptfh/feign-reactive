@@ -27,17 +27,17 @@ import java.util.function.BiFunction;
  */
 public class ResponseMappers {
 
-  public static <T> BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> ignore404() {
+  public static BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> ignore404() {
     return (MethodMetadata methodMetadata, ReactiveHttpResponse response) -> {
       if (response.status() == HttpStatus.SC_NOT_FOUND) {
-        return new DelegatingReactiveHttpResponse<T>(response) {
+        return new DelegatingReactiveHttpResponse(response) {
           @Override
           public int status() {
             return HttpStatus.SC_OK;
           }
 
           @Override
-          public Publisher body() {
+          public Publisher<Object> body() {
             return Mono.empty();
           }
         };

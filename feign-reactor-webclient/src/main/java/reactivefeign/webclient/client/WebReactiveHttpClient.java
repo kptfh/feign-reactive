@@ -29,6 +29,7 @@ import reactivefeign.client.ReactiveHttpClient;
 import reactivefeign.client.ReactiveHttpRequest;
 import reactivefeign.client.ReactiveHttpResponse;
 import reactivefeign.client.ReadTimeoutException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.ParameterizedType;
@@ -48,16 +49,25 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 	private final Type returnPublisherType;
 	private final ParameterizedTypeReference<Object> returnActualType;
 
-	public WebReactiveHttpClient(MethodMetadata methodMetadata, WebClient webClient) {
-		this.webClient = webClient;
-
-		Type bodyType = methodMetadata.bodyType();
-		bodyActualType = getBodyActualType(bodyType);
+	public static WebReactiveHttpClient webClient(MethodMetadata methodMetadata, WebClient webClient) {
 
 		final Type returnType = methodMetadata.returnType();
-		returnPublisherType = ((ParameterizedType) returnType).getRawType();
-		returnActualType = ParameterizedTypeReference.forType(
+		Type returnPublisherType = ((ParameterizedType) returnType).getRawType();
+		ParameterizedTypeReference<Object> returnActualType = ParameterizedTypeReference.forType(
 				resolveLastTypeParameter(returnType, (Class<?>) returnPublisherType));
+
+		return new WebReactiveHttpClient(webClient,
+				getBodyActualType(methodMetadata.bodyType()),
+				returnPublisherType, returnActualType);
+	}
+
+	public WebReactiveHttpClient(WebClient webClient,
+								 ParameterizedTypeReference<Object> bodyActualType,
+								 Type returnPublisherType, ParameterizedTypeReference<Object> returnActualType) {
+		this.webClient = webClient;
+		this.bodyActualType = bodyActualType;
+		this.returnPublisherType = returnPublisherType;
+		this.returnActualType = returnActualType;
 	}
 
 	@Override
@@ -82,7 +92,7 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 		request.headers().forEach(httpHeaders::put);
 	}
 
-	private ParameterizedTypeReference<Object> getBodyActualType(Type bodyType) {
+	public static ParameterizedTypeReference<Object> getBodyActualType(Type bodyType) {
 		return ofNullable(bodyType).map(type -> {
 			if (type instanceof ParameterizedType) {
 				Class<?> returnBodyType = (Class<?>) ((ParameterizedType) type)

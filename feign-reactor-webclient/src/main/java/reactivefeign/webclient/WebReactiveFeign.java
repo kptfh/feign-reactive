@@ -19,9 +19,10 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactivefeign.ReactiveFeign;
 import reactivefeign.ReactiveOptions;
-import reactivefeign.webclient.client.WebReactiveHttpClient;
 
 import java.util.concurrent.TimeUnit;
+
+import static reactivefeign.webclient.client.WebReactiveHttpClient.webClient;
 
 /**
  * {@link WebClient} based implementation of reactive Feign
@@ -40,7 +41,7 @@ public class WebReactiveFeign {
 
   public static class Builder<T> extends ReactiveFeign.Builder<T> {
 
-      private WebClient webClient;
+      protected WebClient webClient;
 
       protected Builder() {
           this(WebClient.create());
@@ -77,9 +78,9 @@ public class WebReactiveFeign {
           return this;
       }
 
-      private void setWebClient(WebClient webClient){
+      protected void setWebClient(WebClient webClient){
           this.webClient = webClient;
-          clientFactory(methodMetadata -> new WebReactiveHttpClient(methodMetadata, webClient));
+          clientFactory(methodMetadata -> webClient(methodMetadata, webClient));
       }
   }
 }

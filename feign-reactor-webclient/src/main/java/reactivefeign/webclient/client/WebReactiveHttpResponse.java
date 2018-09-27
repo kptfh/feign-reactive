@@ -5,6 +5,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import reactivefeign.client.ReactiveHttpResponse;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Type;
@@ -38,9 +39,10 @@ class WebReactiveHttpResponse implements ReactiveHttpResponse{
 	public Publisher<Object> body() {
 		if (returnPublisherType == Mono.class) {
 			return clientResponse.bodyToMono(returnActualType);
-		}
-		else {
+		} else if(returnPublisherType == Flux.class){
 			return clientResponse.bodyToFlux(returnActualType);
+		} else {
+			throw new IllegalArgumentException("Unknown returnPublisherType: " + returnPublisherType);
 		}
 	}
 

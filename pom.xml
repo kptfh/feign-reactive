@@ -11,6 +11,7 @@
         <module>feign-reactor-core</module>
         <module>feign-reactor-webclient</module>
         <module>feign-reactor-cloud</module>
+        <module>feign-reactor-rx2</module>
     </modules>
 
     <name>feign-reactive</name>

@@ -41,19 +41,20 @@ public class ReactiveStatusHandlers {
         return response.bodyData()
                 .defaultIfEmpty(new byte[0])
                 .map(bodyData -> errorDecoder.decode(methodTag,
-            Response.builder().status(response.status())
-                .reason(HttpStatus.getStatusText(response.status()))
-                .headers(response.headers().entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey,
-                        Map.Entry::getValue)))
-                .body(bodyData).build()));
+                        Response.builder().status(response.status())
+                                .reason(HttpStatus.getStatusText(response.status()))
+                                .headers(response.headers().entrySet()
+                                        .stream()
+                                        .collect(Collectors.toMap(Map.Entry::getKey,
+                                                Map.Entry::getValue)))
+                                .body(bodyData).build()));
       }
     };
   }
 
-  public static ReactiveStatusHandler throwOnStatus(Predicate<Integer> statusPredicate,
-                                                    BiFunction<String, ReactiveHttpResponse, Throwable> errorFunction) {
+  public static ReactiveStatusHandler throwOnStatus(
+          Predicate<Integer> statusPredicate,
+          BiFunction<String, ReactiveHttpResponse, Throwable> errorFunction) {
     return new ReactiveStatusHandler() {
       @Override
       public boolean shouldHandle(int status) {

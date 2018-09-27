@@ -21,6 +21,7 @@ non-blocking HTTP client of Spring WebClient.
   
   **_feign-reactor-cloud_** : Spring Cloud implementation of reactor Feign (Ribbon/Hystrix)
   
+  **_feign-reactor-rx2_** : Rx2 compatible implementation of reactor Feign (depends on feign-reactor-webclient)
 
 ## Usage
 
@@ -68,7 +69,6 @@ or cloud aware client :
 
 ```java
  IcecreamServiceApi client = CloudReactiveFeign.<IcecreamServiceApi>builder()
-    .setHystrixCommandSetterFactory(new DefaultSetterFactory())
     .setFallback(new TestInterface() {
         @Override
         public Mono<String> get() {
@@ -86,6 +86,47 @@ or cloud aware client :
 /* Execute nonblocking requests */
 Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();
 Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
+```
+
+## Rx2 Usage 
+
+Write Feign API as usual, but every method of interface
+ - may accept `Flowable`, `Observable`, `Single` or `Maybe` as body
+ - must return `Flowable`, `Observable`, `Single` or `Maybe`.
+
+```java
+@Headers({"Accept: application/json"})
+public interface IcecreamServiceApi {
+
+  @RequestLine("GET /icecream/flavors")
+  Flowable<Flavor> getAvailableFlavors();
+
+  @RequestLine("GET /icecream/mixins")
+  Observable<Mixin> getAvailableMixins();
+
+  @RequestLine("POST /icecream/orders")
+  @Headers("Content-Type: application/json")
+  Single<Bill> makeOrder(IceCreamOrder order);
+
+  @RequestLine("GET /icecream/orders/{orderId}")
+  Maybe<IceCreamOrder> findOrder(@Param("orderId") int orderId);
+
+  @RequestLine("POST /icecream/bills/pay")
+  @Headers("Content-Type: application/json")
+  Single<Long> payBill(Bill bill);
+```
+Build the client :
+
+```java
+
+/* Create instance of your API */
+IcecreamServiceApi client = Rx2ReactiveFeign
+    .builder()
+    .target(IcecreamServiceApi.class, "http://www.icecreame.com")
+
+/* Execute nonblocking requests */
+Flowable<Flavor> flavors = icecreamApi.getAvailableFlavors();
+Observable<Mixin> mixins = icecreamApi.getAvailableMixins();
 ```
 
 ## Maven
@@ -112,9 +153,17 @@ Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
     
     <dependency>
         <groupId>io.github.reactivefeign</groupId>
-        <artifactId>feign-reactor-cloud</artifactId>
+        <artifactId>feign-reactor-webclient</artifactId>
         <version>1.0.0</version>
     </dependency>
+    
+    or if you tend to use Rx2 interfaces
+    
+    <dependency>
+            <groupId>io.github.reactivefeign</groupId>
+            <artifactId>feign-reactor-rx2</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     ...
 </dependencies>
 ```

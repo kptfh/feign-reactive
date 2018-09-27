@@ -36,7 +36,7 @@ abstract public class ReactivityTest {
 
   public static final int DELAY_IN_MILLIS = 500;
   public static final int CALLS_NUMBER = 100;
-  public static final int REACTIVE_GAIN_RATIO = 15;
+  public static final int REACTIVE_GAIN_RATIO = 10;
   @ClassRule
   public static WireMockClassRule wireMockRule = new WireMockClassRule(
       wireMockConfig()
