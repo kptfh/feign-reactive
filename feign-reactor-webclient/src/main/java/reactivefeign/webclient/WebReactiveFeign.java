@@ -31,7 +31,10 @@ import static reactivefeign.webclient.client.WebReactiveHttpClient.webClient;
  */
 public class WebReactiveFeign {
 
-  public static <T> Builder<T> builder() {
+    public static final int DEFAULT_READ_TIMEOUT_MILLIS = 10000;
+    public static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5000;
+
+    public static <T> Builder<T> builder() {
     return new Builder<>();
   }
 
@@ -49,6 +52,10 @@ public class WebReactiveFeign {
 
       protected Builder(WebClient webClient) {
           setWebClient(webClient);
+          options(new ReactiveOptions.Builder()
+                  .setConnectTimeoutMillis(DEFAULT_CONNECT_TIMEOUT_MILLIS)
+                  .setReadTimeoutMillis(DEFAULT_READ_TIMEOUT_MILLIS)
+                  .build());
       }
 
       @Override

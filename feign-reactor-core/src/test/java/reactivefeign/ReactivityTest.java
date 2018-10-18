@@ -35,45 +35,46 @@ import static org.awaitility.Awaitility.waitAtMost;
 abstract public class ReactivityTest {
 
   public static final int DELAY_IN_MILLIS = 500;
-  public static final int CALLS_NUMBER = 100;
-  public static final int REACTIVE_GAIN_RATIO = 10;
+  public static final int CALLS_NUMBER = 500;
+  public static final int REACTIVE_GAIN_RATIO = 20;
   @ClassRule
   public static WireMockClassRule wireMockRule = new WireMockClassRule(
-      wireMockConfig()
-          .asynchronousResponseEnabled(true)
-          .dynamicPort());
+          wireMockConfig()
+                  .asynchronousResponseEnabled(true)
+                  .dynamicPort());
 
   abstract protected ReactiveFeign.Builder<IcecreamServiceApi> builder();
 
   @Test
-  public void shouldRunReactively() throws JsonProcessingException {
+  public void shouldRunReactively() throws JsonProcessingException, InterruptedException {
 
     IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
     String orderStr = TestUtils.MAPPER.writeValueAsString(orderGenerated);
 
     wireMockRule.stubFor(get(urlEqualTo("/icecream/orders/1"))
-        .withHeader("Accept", equalTo("application/json"))
-        .willReturn(aResponse().withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(orderStr)
-            .withFixedDelay(DELAY_IN_MILLIS)));
+            .withHeader("Accept", equalTo("application/json"))
+            .willReturn(aResponse().withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(orderStr)
+                    .withFixedDelay(DELAY_IN_MILLIS)));
 
     IcecreamServiceApi client = builder()
-        .target(IcecreamServiceApi.class,
-            "http://localhost:" + wireMockRule.port());
+            .target(IcecreamServiceApi.class,
+                    "http://localhost:" + wireMockRule.port());
 
     AtomicInteger counter = new AtomicInteger();
 
-    new Thread(() -> {
-      for (int i = 0; i < CALLS_NUMBER; i++) {
-        client.findFirstOrder()
-            .doOnNext(order -> counter.incrementAndGet())
-            .subscribe();
-      }
-    }).start();
+    for (int i = 0; i < CALLS_NUMBER; i++) {
+      client.findFirstOrder()
+              .doOnNext(order -> counter.incrementAndGet())
+              .subscribe();
+    }
 
-    int timeToCompleteReactively = CALLS_NUMBER * DELAY_IN_MILLIS / REACTIVE_GAIN_RATIO;
-    waitAtMost(new Duration(timeToCompleteReactively, TimeUnit.MILLISECONDS))
-        .until(() -> counter.get() == CALLS_NUMBER);
+    waitAtMost(new Duration(timeToCompleteReactively(), TimeUnit.MILLISECONDS))
+            .until(() -> counter.get() == CALLS_NUMBER);
+  }
+
+  public static int timeToCompleteReactively() {
+    return CALLS_NUMBER * DELAY_IN_MILLIS / REACTIVE_GAIN_RATIO;
   }
 }

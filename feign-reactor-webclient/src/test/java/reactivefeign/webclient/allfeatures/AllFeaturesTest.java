@@ -16,6 +16,7 @@
 
 package reactivefeign.webclient.allfeatures;
 
+import org.awaitility.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,11 +42,14 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.waitAtMost;
+import static reactivefeign.ReactivityTest.*;
 import static reactor.core.publisher.Flux.empty;
 import static reactor.core.publisher.Mono.fromFuture;
 import static reactor.core.publisher.Mono.just;
@@ -244,6 +248,22 @@ public class AllFeaturesTest {
 	public void shouldReturnDefaultBody() {
 		String returned = client.mirrorDefaultBody().block();
 		assertThat(returned).isEqualTo("default");
+	}
+
+
+	@Test
+	public void shouldRunReactively() {
+
+		AtomicInteger counter = new AtomicInteger();
+
+		for (int i = 0; i < CALLS_NUMBER; i++) {
+			client.mirrorBodyWithDelay("testBody")
+					.doOnNext(order -> counter.incrementAndGet())
+					.subscribe();
+		}
+
+		waitAtMost(new Duration(timeToCompleteReactively(), TimeUnit.MILLISECONDS))
+				.until(() -> counter.get() == CALLS_NUMBER);
 	}
 
 }

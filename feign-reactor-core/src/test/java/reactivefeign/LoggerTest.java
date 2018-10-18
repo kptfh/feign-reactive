@@ -61,7 +61,7 @@ abstract public class LoggerTest {
   @Test
   public void shouldLog() throws Exception {
 
-    setLogLevel(Level.TRACE);
+    Level originalLevel = setLogLevel(Level.TRACE);
 
     IceCreamOrder order = new OrderGenerator().generate(20);
     Bill billExpected = Bill.makeBill(order);
@@ -105,6 +105,8 @@ abstract public class LoggerTest {
             "reactivefeign.testcase.domain.Bill");
     assertLogEvent(logEvents, 6, Level.DEBUG,
         "[IcecreamServiceApi#makeOrder]<--- body takes");
+
+    setLogLevel(originalLevel);
   }
 
   private void assertLogEvent(List<LogEvent> events, int index, Level level, String message) {
@@ -123,11 +125,14 @@ abstract public class LoggerTest {
     getLoggerConfig().addAppender(appender, Level.ALL, null);
   }
 
-  private static void setLogLevel(Level logLevel) {
+  private static Level setLogLevel(Level logLevel) {
     LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
     Configuration configuration = loggerContext.getConfiguration();
-    configuration.getLoggerConfig(LOGGER_NAME).setLevel(logLevel);
+    LoggerConfig loggerConfig = configuration.getLoggerConfig(LOGGER_NAME);
+    Level previousLevel = loggerConfig.getLevel();
+    loggerConfig.setLevel(logLevel);
     loggerContext.updateLoggers();
+    return previousLevel;
   }
 
   private static LoggerConfig getLoggerConfig() {

@@ -78,6 +78,9 @@ public interface AllFeaturesApi {
 	@Headers({ "Method-Header: {headerValue}" })
 	Mono<TestObject> empty();
 
+	@RequestLine("POST " + "/mirrorBodyWithDelay")
+	Mono<String> mirrorBodyWithDelay(String body);
+
 	default Mono<String> mirrorDefaultBody() {
 		return mirrorBody("default");
 	}

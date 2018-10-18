@@ -79,6 +79,12 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 				.exchange()
 				.onErrorMap(ex -> ex instanceof io.netty.handler.timeout.ReadTimeoutException,
 						ReadTimeoutException::new)
+				.doOnError(throwable -> {
+					int debug = 0;
+				})
+				.doOnCancel(() -> {
+					int debug = 0;
+				})
 				.map(response -> new WebReactiveHttpResponse(response, returnPublisherType, returnActualType));
 	}
 

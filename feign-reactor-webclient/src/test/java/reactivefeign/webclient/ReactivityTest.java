@@ -25,7 +25,7 @@ public class ReactivityTest extends reactivefeign.ReactivityTest {
   }
 
   @Override
-  public void shouldRunReactively() throws JsonProcessingException {
+  public void shouldRunReactively() throws JsonProcessingException, InterruptedException {
     super.shouldRunReactively();
   }
 }

@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Map;
 
 import static reactor.core.publisher.Mono.just;
@@ -105,6 +106,12 @@ public class AllFeaturesController implements AllFeaturesApi {
 	public Flux<TestObject> mirrorBodyStream(
 			@RequestBody Publisher<TestObject> bodyStream) {
 		return Flux.from(bodyStream);
+	}
+
+	@PostMapping(path = "/mirrorBodyWithDelay")
+	@Override
+	public Mono<String> mirrorBodyWithDelay(@RequestBody String body) {
+		return just(body).delayElement(Duration.ofMillis(500));
 	}
 
 	@Override
