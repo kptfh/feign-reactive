@@ -1,3 +1,10 @@
+
+[![CircleCI](https://circleci.com/gh/Playtika/feign-reactive.svg?style=shield)](https://circleci.com/gh/Playtika/feign-reactive)
+[![codecov](https://codecov.io/gh/Playtika/feign-reactive/branch/master/graph/badge.svg)](https://codecov.io/gh/Playtika/feign-reactive)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ce80f97d24fb4371a9f71cf44e94b0b0)](https://www.codacy.com/app/PlaytikaGithub/feign-reactive?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Playtika/feign-reactive&amp;utm_campaign=Badge_Grade)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.playtika.reactivefeign/feign-reactor/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.playtika.reactivefeign/feign-reactor)
+
+
 # feign-reactive
 
 [ ![Download](https://api.bintray.com/packages/kptfh/feign-reactive/client/images/download.svg) ](https://bintray.com/kptfh/feign-reactive/client/_latestVersion)
