@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package reactivefeign.webclient.client;
+package reactivefeign.jetty.client;
 
 import feign.MethodMetadata;
-import org.reactivestreams.Publisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,7 +28,6 @@ import reactivefeign.client.ReactiveHttpClient;
 import reactivefeign.client.ReactiveHttpRequest;
 import reactivefeign.client.ReactiveHttpResponse;
 import reactivefeign.client.ReadTimeoutException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.ParameterizedType;
@@ -37,6 +35,7 @@ import java.lang.reflect.Type;
 
 import static feign.Util.resolveLastTypeParameter;
 import static java.util.Optional.ofNullable;
+import static reactivefeign.utils.FeignUtils.getBodyActualType;
 
 /**
  * Uses {@link WebClient} to execute http requests
@@ -56,9 +55,13 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 		ParameterizedTypeReference<Object> returnActualType = ParameterizedTypeReference.forType(
 				resolveLastTypeParameter(returnType, (Class<?>) returnPublisherType));
 
+		ParameterizedTypeReference<Object> bodyActualType = ofNullable(
+				getBodyActualType(methodMetadata.bodyType()))
+				.map(type -> ParameterizedTypeReference.forType(type))
+				.orElse(null);
+
 		return new WebReactiveHttpClient(webClient,
-				getBodyActualType(methodMetadata.bodyType()),
-				returnPublisherType, returnActualType);
+				bodyActualType, returnPublisherType, returnActualType);
 	}
 
 	public WebReactiveHttpClient(WebClient webClient,
@@ -79,12 +82,6 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 				.exchange()
 				.onErrorMap(ex -> ex instanceof io.netty.handler.timeout.ReadTimeoutException,
 						ReadTimeoutException::new)
-				.doOnError(throwable -> {
-					int debug = 0;
-				})
-				.doOnCancel(() -> {
-					int debug = 0;
-				})
 				.map(response -> new WebReactiveHttpResponse(response, returnPublisherType, returnActualType));
 	}
 
@@ -96,25 +93,6 @@ public class WebReactiveHttpClient implements ReactiveHttpClient {
 
 	protected void setUpHeaders(ReactiveHttpRequest request, HttpHeaders httpHeaders) {
 		request.headers().forEach(httpHeaders::put);
-	}
-
-	public static ParameterizedTypeReference<Object> getBodyActualType(Type bodyType) {
-		return ofNullable(bodyType).map(type -> {
-			if (type instanceof ParameterizedType) {
-				Class<?> returnBodyType = (Class<?>) ((ParameterizedType) type)
-						.getRawType();
-				if ((returnBodyType).isAssignableFrom(Publisher.class)) {
-					return ParameterizedTypeReference
-							.forType(resolveLastTypeParameter(bodyType, returnBodyType));
-				}
-				else {
-					return ParameterizedTypeReference.forType(type);
-				}
-			}
-			else {
-				return ParameterizedTypeReference.forType(type);
-			}
-		}).orElse(null);
 	}
 
 }

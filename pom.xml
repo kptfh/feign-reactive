@@ -12,6 +12,7 @@
         <module>feign-reactor-webclient</module>
         <module>feign-reactor-cloud</module>
         <module>feign-reactor-rx2</module>
+        <module>feign-reactor-jetty</module>
     </modules>
 
     <name>feign-reactive</name>
@@ -81,6 +82,10 @@
         <reactor-adapter.version>3.1.6.RELEASE</reactor-adapter.version>
         <rxjava2.version>2.2.2</rxjava2.version>
 
+        <!--Jetty-->
+        <jetty-reactive-httpclient.version>1.0.1</jetty-reactive-httpclient.version>
+        <json-reactor.version>0.0.1</json-reactor.version>
+
         <!-- Tests -->
         <spring-boot-starter-webflux.version>2.0.5.RELEASE</spring-boot-starter-webflux.version>
         <spring-boot-starter.version>2.0.5.RELEASE</spring-boot-starter.version>
@@ -88,7 +93,6 @@
         <assertj.version>3.9.0</assertj.version>
         <wiremock.version>2.19.0</wiremock.version>
         <jetty.version>9.4.12.v20180830</jetty.version>
-        <jackson.version>2.9.3</jackson.version>
         <slf4j-log4j12.version>1.8.0-beta0</slf4j-log4j12.version>
         <hamcrest.version>1.3</hamcrest.version>
         <awaitility.version>3.0.0</awaitility.version>
@@ -103,6 +107,7 @@
         <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
         <versions-maven-plugin.version>2.3</versions-maven-plugin.version>
+
     </properties>
 
     <dependencyManagement>
@@ -236,6 +241,19 @@
                 <version>${rxjava2.version}</version>
             </dependency>
 
+            <!--Jetty part-->
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-reactive-httpclient</artifactId>
+                <version>${jetty-reactive-httpclient.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.kptfh.reactivejson</groupId>
+                <artifactId>json-reactor</artifactId>
+                <version>${json-reactor.version}</version>
+            </dependency>
+
             <!--Test-->
             <dependency>
                 <groupId>junit</groupId>
@@ -311,7 +329,6 @@
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-jsr310</artifactId>
                 <version>${jackson.version}</version>
-                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -338,8 +355,13 @@
         </dependencies>
     </dependencyManagement>
 
-    <dependencies>
-    </dependencies>
+    <repositories>
+        <repository>
+            <id>bintray-kptfh-feign-reactive</id>
+            <name>bintray</name>
+            <url>https://dl.bintray.com/kptfh/json-reactive</url>
+        </repository>
+    </repositories>
 
     <build>
         <pluginManagement>

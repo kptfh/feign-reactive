@@ -11,16 +11,16 @@ import reactivefeign.ReactiveOptions;
 import reactivefeign.ReactiveRetryPolicy;
 import reactivefeign.client.ReactiveHttpClient;
 import reactivefeign.client.ReactiveHttpRequestInterceptor;
-import reactivefeign.rx2.client.statushandler.Rx2ReactiveStatusHandler;
-import reactivefeign.rx2.client.statushandler.Rx2StatusHandler;
-import reactivefeign.rx2.methodhandler.Rx2MethodHandlerFactory;
 import reactivefeign.methodhandler.MethodHandlerFactory;
 import reactivefeign.publisher.FluxPublisherHttpClient;
 import reactivefeign.publisher.MonoPublisherHttpClient;
 import reactivefeign.publisher.PublisherHttpClient;
+import reactivefeign.rx2.client.statushandler.Rx2ReactiveStatusHandler;
+import reactivefeign.rx2.client.statushandler.Rx2StatusHandler;
+import reactivefeign.rx2.methodhandler.Rx2MethodHandlerFactory;
 import reactivefeign.utils.Pair;
 import reactivefeign.webclient.WebReactiveFeign;
-import reactivefeign.webclient.client.WebReactiveHttpClient;
+import reactivefeign.jetty.client.WebReactiveHttpClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,9 +29,9 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 import static feign.Util.resolveLastTypeParameter;
+import static java.util.Optional.ofNullable;
+import static reactivefeign.utils.FeignUtils.getBodyActualType;
 import static reactivefeign.utils.FeignUtils.returnPublisherType;
-import static reactivefeign.utils.MultiValueMapUtils.addOrdered;
-import static reactivefeign.webclient.client.WebReactiveHttpClient.getBodyActualType;
 
 /**
  * @author Sergii Karpenko
@@ -141,10 +141,13 @@ public class Rx2ReactiveFeign extends ReactiveFeign {
             Type returnPublisherType = ((ParameterizedType) returnType).getRawType();
             ParameterizedTypeReference<Object> returnActualType = ParameterizedTypeReference.forType(
                     resolveLastTypeParameter(returnType, (Class<?>) returnPublisherType));
+            ParameterizedTypeReference<Object> bodyActualType = ofNullable(
+                    getBodyActualType(methodMetadata.bodyType()))
+                    .map(type -> ParameterizedTypeReference.forType(type))
+                    .orElse(null);
 
             return new WebReactiveHttpClient(webClient,
-                    getBodyActualType(methodMetadata.bodyType()),
-                    rx2ToReactor(returnPublisherType), returnActualType);
+                    bodyActualType, rx2ToReactor(returnPublisherType), returnActualType);
         }
 
         private static Class rx2ToReactor(Type type){

@@ -96,7 +96,7 @@ abstract public class LoggerTest {
         "[IcecreamServiceApi#makeOrder] REQUEST BODY\n" +
             "IceCreamOrder{ id=20, balls=");
     assertLogEvent(logEvents, 3, Level.TRACE,
-        "[IcecreamServiceApi#makeOrder] RESPONSE HEADERS\n" +
+        "[IcecreamServiceApi#makeOrder] RESPONSE HEADERS",
             "Content-Type:application/json");
     assertLogEvent(logEvents, 4, Level.DEBUG,
         "[IcecreamServiceApi#makeOrder]<--- headers takes");
@@ -115,6 +115,15 @@ abstract public class LoggerTest {
         .extracting("message")
         .extractingResultOf("getFormattedMessage")
         .have(new Condition<>(o -> ((String) o).contains(message), "check message"));
+  }
+
+  private void assertLogEvent(List<LogEvent> events, int index, Level level, String message1, String message2) {
+    assertThat(events).element(index)
+            .hasFieldOrPropertyWithValue("level", level)
+            .extracting("message")
+            .extractingResultOf("getFormattedMessage")
+            .have(new Condition<>(o -> ((String) o).contains(message1), "check message1"))
+            .have(new Condition<>(o -> ((String) o).contains(message2), "check message2"));;
   }
 
   @Before

@@ -46,7 +46,7 @@ abstract public class ReactivityTest {
   abstract protected ReactiveFeign.Builder<IcecreamServiceApi> builder();
 
   @Test
-  public void shouldRunReactively() throws JsonProcessingException, InterruptedException {
+  public void shouldRunReactively() throws JsonProcessingException {
 
     IceCreamOrder orderGenerated = new OrderGenerator().generate(1);
     String orderStr = TestUtils.MAPPER.writeValueAsString(orderGenerated);

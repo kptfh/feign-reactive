@@ -14,19 +14,41 @@
 package reactivefeign.utils;
 
 import feign.MethodMetadata;
+import org.reactivestreams.Publisher;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+
+import static feign.Util.resolveLastTypeParameter;
+import static java.util.Optional.ofNullable;
 
 public class FeignUtils {
 
   public static String methodTag(MethodMetadata methodMetadata) {
     return methodMetadata.configKey().substring(0,
-        methodMetadata.configKey().indexOf('('));
+            methodMetadata.configKey().indexOf('('));
   }
 
   public static Type returnPublisherType(MethodMetadata methodMetadata) {
     final Type returnType = methodMetadata.returnType();
     return ((ParameterizedType) returnType).getRawType();
   }
+
+  public static Type getBodyActualType(Type bodyType) {
+    return ofNullable(bodyType).map(type -> {
+      if (type instanceof ParameterizedType) {
+        Class<?> returnBodyType = (Class<?>) ((ParameterizedType) type).getRawType();
+        if ((returnBodyType).isAssignableFrom(Publisher.class)) {
+          return resolveLastTypeParameter(bodyType, returnBodyType);
+        }
+        else {
+          return type;
+        }
+      }
+      else {
+        return type;
+      }
+    }).orElse(null);
+  }
+
 }

@@ -18,22 +18,22 @@ package reactivefeign;
  */
 public class ReactiveOptions {
 
-  private final Integer connectTimeoutMillis;
-  private final Integer readTimeoutMillis;
+  private final Long connectTimeoutMillis;
+  private final Long readTimeoutMillis;
   private final Boolean tryUseCompression;
 
-  private ReactiveOptions(Integer connectTimeoutMillis, Integer readTimeoutMillis,
+  private ReactiveOptions(Long connectTimeoutMillis, Long readTimeoutMillis,
       Boolean tryUseCompression) {
     this.connectTimeoutMillis = connectTimeoutMillis;
     this.readTimeoutMillis = readTimeoutMillis;
     this.tryUseCompression = tryUseCompression;
   }
 
-  public Integer getConnectTimeoutMillis() {
+  public Long getConnectTimeoutMillis() {
     return connectTimeoutMillis;
   }
 
-  public Integer getReadTimeoutMillis() {
+  public Long getReadTimeoutMillis() {
     return readTimeoutMillis;
   }
 
@@ -47,18 +47,18 @@ public class ReactiveOptions {
   }
 
   public static class Builder {
-    private Integer connectTimeoutMillis;
-    private Integer readTimeoutMillis;
+    private Long connectTimeoutMillis;
+    private Long readTimeoutMillis;
     private Boolean tryUseCompression;
 
     public Builder() {}
 
-    public Builder setConnectTimeoutMillis(int connectTimeoutMillis) {
+    public Builder setConnectTimeoutMillis(long connectTimeoutMillis) {
       this.connectTimeoutMillis = connectTimeoutMillis;
       return this;
     }
 
-    public Builder setReadTimeoutMillis(int readTimeoutMillis) {
+    public Builder setReadTimeoutMillis(long readTimeoutMillis) {
       this.readTimeoutMillis = readTimeoutMillis;
       return this;
     }

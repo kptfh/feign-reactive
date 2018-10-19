@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package reactivefeign.webclient.allfeatures;
+package reactivefeign.jetty.allfeatures;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import reactivefeign.ReactiveFeign;
-import reactivefeign.webclient.WebReactiveFeign;
+import reactivefeign.jetty.JettyReactiveFeign;
 
 /**
  * @author Sergii Karpenko
@@ -31,6 +31,6 @@ public class AllFeaturesTest extends reactivefeign.allfeatures.AllFeaturesTest {
 
 	@Override
 	protected ReactiveFeign.Builder<reactivefeign.allfeatures.AllFeaturesApi> builder() {
-		return WebReactiveFeign.builder();
+		return JettyReactiveFeign.builder();
 	}
 }
