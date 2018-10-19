@@ -11,21 +11,29 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package reactivefeign.webclient;
+package reactivefeign.jetty;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import reactivefeign.ReactiveFeign;
+import reactivefeign.ReactiveOptions;
 import reactivefeign.testcase.IcecreamServiceApi;
 
-public class ReactivityTest extends reactivefeign.ReactivityTest {
+/**
+ * @author Sergii Karpenko
+ */
+public class DefaultMethodTest extends reactivefeign.DefaultMethodTest {
 
   @Override
   protected ReactiveFeign.Builder<IcecreamServiceApi> builder() {
-    return WebReactiveFeign.builder();
+    return JettyReactiveFeign.builder();
   }
 
   @Override
-  public void shouldRunReactively() throws JsonProcessingException {
-    super.shouldRunReactively();
+  protected <API> ReactiveFeign.Builder<API> builder(Class<API> apiClass) {
+    return JettyReactiveFeign.builder();
+  }
+
+  @Override
+  protected ReactiveFeign.Builder<IcecreamServiceApi> builder(ReactiveOptions options) {
+    return JettyReactiveFeign.<IcecreamServiceApi>builder().options(options);
   }
 }

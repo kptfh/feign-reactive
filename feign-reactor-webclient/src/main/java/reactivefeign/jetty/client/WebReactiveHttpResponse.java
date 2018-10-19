@@ -1,4 +1,4 @@
-package reactivefeign.webclient.client;
+package reactivefeign.jetty.client;
 
 import org.reactivestreams.Publisher;
 import org.springframework.core.ParameterizedTypeReference;

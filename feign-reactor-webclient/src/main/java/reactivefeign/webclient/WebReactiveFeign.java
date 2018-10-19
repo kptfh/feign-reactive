@@ -22,7 +22,7 @@ import reactivefeign.ReactiveOptions;
 
 import java.util.concurrent.TimeUnit;
 
-import static reactivefeign.webclient.client.WebReactiveHttpClient.webClient;
+import static reactivefeign.jetty.client.WebReactiveHttpClient.webClient;
 
 /**
  * {@link WebClient} based implementation of reactive Feign
@@ -65,7 +65,7 @@ public class WebReactiveFeign {
                       opts -> {
                           if (options.getConnectTimeoutMillis() != null) {
                               opts.option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
-                                      options.getConnectTimeoutMillis());
+                                      options.getConnectTimeoutMillis().intValue());
                           }
                           if (options.getReadTimeoutMillis() != null) {
                               opts.afterNettyContextInit(ctx -> {

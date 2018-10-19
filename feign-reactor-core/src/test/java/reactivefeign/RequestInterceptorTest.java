@@ -29,7 +29,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.Collections.singletonList;
 import static reactivefeign.TestUtils.equalsComparingFieldByFieldRecursively;
-import static reactivefeign.utils.MultiValueMapUtils.addOrdered;
 
 /**
  * @author Sergii Karpenko
@@ -67,7 +66,7 @@ abstract public class RequestInterceptorTest {
         .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());
 
     StepVerifier.create(clientWithoutAuth.findFirstOrder())
-        .expectError(FeignException.class)
+        .expectError(notAuthorizedException())
         .verify();
 
     IcecreamServiceApi clientWithAuth = builder()
@@ -78,5 +77,9 @@ abstract public class RequestInterceptorTest {
     StepVerifier.create(clientWithAuth.findFirstOrder())
         .expectNextMatches(equalsComparingFieldByFieldRecursively(orderGenerated))
         .expectComplete();
+  }
+
+  protected Class notAuthorizedException() {
+    return FeignException.class;
   }
 }

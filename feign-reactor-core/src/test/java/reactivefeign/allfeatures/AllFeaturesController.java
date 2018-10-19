@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package reactivefeign.webclient.allfeatures;
+package reactivefeign.allfeatures;
 
 import org.reactivestreams.Publisher;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
 
@@ -82,18 +79,6 @@ public class AllFeaturesController implements AllFeaturesApi {
 		return Mono.from(body);
 	}
 
-	@PostMapping(path = "/mirrorStreamingBinaryBodyReactive")
-	@Override
-	public Flux<DataBuffer> mirrorStreamingBinaryBodyReactive(@RequestBody Publisher<DataBuffer> body) {
-		return Flux.from(body);
-	}
-
-	@PostMapping(path = "/mirrorResourceReactiveWithZeroCopying")
-	@Override
-	public Flux<DataBuffer> mirrorResourceReactiveWithZeroCopying(@RequestBody Resource resource) {
-		return DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 3);
-	}
-
 	@PostMapping(path = "/mirrorBodyMapReactive")
 	@Override
 	public Mono<Map<String, String>> mirrorBodyMapReactive(
@@ -117,6 +102,12 @@ public class AllFeaturesController implements AllFeaturesApi {
 	@Override
 	public Mono<TestObject> empty() {
 		return Mono.empty();
+	}
+
+	@PostMapping(path = "/mirrorStreamingBinaryBodyReactive")
+	@Override
+	public Flux<ByteBuffer> mirrorStreamingBinaryBodyReactive(@RequestBody Publisher<ByteBuffer> body) {
+		return Flux.from(body);
 	}
 
 }
