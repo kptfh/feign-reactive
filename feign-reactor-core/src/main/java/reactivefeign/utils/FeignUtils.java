@@ -37,9 +37,9 @@ public class FeignUtils {
   public static Type getBodyActualType(Type bodyType) {
     return ofNullable(bodyType).map(type -> {
       if (type instanceof ParameterizedType) {
-        Class<?> returnBodyType = (Class<?>) ((ParameterizedType) type).getRawType();
-        if ((returnBodyType).isAssignableFrom(Publisher.class)) {
-          return resolveLastTypeParameter(bodyType, returnBodyType);
+        Class<?> bodyClass = (Class<?>) ((ParameterizedType) type).getRawType();
+        if (Publisher.class.isAssignableFrom(bodyClass)) {
+          return resolveLastTypeParameter(bodyType, bodyClass);
         }
         else {
           return type;

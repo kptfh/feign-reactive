@@ -180,14 +180,15 @@ abstract public class AllFeaturesTest {
 
 		Flux<AllFeaturesApi.TestObject> returned = client
 				.mirrorBodyStream(Flux.just(new AllFeaturesApi.TestObject("testMessage1"),
-						new AllFeaturesApi.TestObject("testMessage2")))
-				.delayUntil(testObject -> sentCount.get() == 1 ? fromFuture(firstReceived)
-						: empty())
-				.doOnNext(sent -> sentCount.incrementAndGet());
+						new AllFeaturesApi.TestObject("testMessage2"))
+//						.delayUntil(testObject -> sentCount.get() == 1 ? fromFuture(firstReceived)
+//								: empty())
+						.doOnNext(sent -> sentCount.incrementAndGet())
+				);
 
 		returned.doOnNext(received -> {
 			receivedCount.incrementAndGet();
-			assertThat(receivedCount.get()).isEqualTo(sentCount.get());
+//			assertThat(receivedCount.get()).isEqualTo(sentCount.get());
 			firstReceived.complete(received);
 			countDownLatch.countDown();
 		}).subscribe();
@@ -221,6 +222,19 @@ abstract public class AllFeaturesTest {
 
 		waitAtMost(new Duration(timeToCompleteReactively(), TimeUnit.MILLISECONDS))
 				.until(() -> counter.get() == CALLS_NUMBER);
+	}
+
+	@Test
+	public void shouldMirrorIntegerStreamBody() {
+		Flux<Integer> result = client.mirrorIntegerBodyStream(
+				Flux.fromArray(new Integer[]{1, 3, 5, 7}));
+
+		StepVerifier.create(result)
+				.expectNext(1)
+				.expectNext(3)
+				.expectNext(5)
+				.expectNext(7)
+				.verifyComplete();
 	}
 
 	@Test

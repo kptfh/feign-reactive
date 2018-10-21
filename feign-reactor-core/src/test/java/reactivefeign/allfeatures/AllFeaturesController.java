@@ -90,7 +90,16 @@ public class AllFeaturesController implements AllFeaturesApi {
 	@Override
 	public Flux<TestObject> mirrorBodyStream(
 			@RequestBody Publisher<TestObject> bodyStream) {
-		return Flux.from(bodyStream);
+		return Flux.from(bodyStream).doOnNext(testObject -> {
+			int debug = 0;
+		});
+	}
+
+	@PostMapping(path = "/mirrorIntegerBodyStream")
+	@Override
+	public Flux<Integer> mirrorIntegerBodyStream(
+			@RequestBody Flux<Integer> body){
+		return body;
 	}
 
 	@PostMapping(path = "/mirrorBodyWithDelay")
