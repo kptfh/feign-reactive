@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_STREAM_JSON_VALUE;
 
 @Headers({ "Accept: application/json" })
 public interface AllFeaturesApi {
@@ -62,8 +63,11 @@ public interface AllFeaturesApi {
 	Mono<Map<String, String>> mirrorBodyMapReactive(Publisher<Map<String, String>> body);
 
 	@RequestLine("POST " + "/mirrorBodyStream")
-	@Headers({ "Content-Type: application/json" })
+	@Headers({ "Content-Type: "+APPLICATION_STREAM_JSON_VALUE })
 	Flux<TestObject> mirrorBodyStream(Publisher<TestObject> bodyStream);
+
+	@RequestLine("POST " + "/mirrorIntegerBodyStream")
+	Flux<Integer> mirrorIntegerBodyStream(Flux<Integer> body);
 
 	@RequestLine("GET /empty")
 	@Headers({ "Method-Header: {headerValue}" })
