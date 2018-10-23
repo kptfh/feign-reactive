@@ -17,6 +17,7 @@
 package reactivefeign.allfeatures;
 
 import org.reactivestreams.Publisher;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
 
+import static org.springframework.http.MediaType.APPLICATION_STREAM_JSON_VALUE;
 import static reactor.core.publisher.Mono.just;
 
 @RestController
@@ -90,15 +92,20 @@ public class AllFeaturesController implements AllFeaturesApi {
 	@Override
 	public Flux<TestObject> mirrorBodyStream(
 			@RequestBody Publisher<TestObject> bodyStream) {
-		return Flux.from(bodyStream).doOnNext(testObject -> {
-			int debug = 0;
-		});
+		return Flux.from(bodyStream);
 	}
 
 	@PostMapping(path = "/mirrorIntegerBodyStream")
 	@Override
 	public Flux<Integer> mirrorIntegerBodyStream(
 			@RequestBody Flux<Integer> body){
+		return body;
+	}
+
+	@PostMapping(path = "/mirrorStringBodyStream")
+	@Override
+	public Flux<String> mirrorStringBodyStream(
+			@RequestBody  Flux<String> body){
 		return body;
 	}
 

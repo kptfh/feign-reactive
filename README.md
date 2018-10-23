@@ -19,6 +19,11 @@ non-blocking HTTP client of Spring WebClient.
   **_feign-reactor-cloud_** : Spring Cloud implementation of reactor Feign (Ribbon/Hystrix)
   
   **_feign-reactor-rx2_** : Rx2 compatible implementation of reactor Feign (depends on feign-reactor-webclient)
+  
+  **_feign-reactor-jetty_** : experimental Reactive Jetty client based implementation of reactor Feign (doesn't depend on feign-reactor-webclient). In future will allow to write pure Rx2 version.
+  - have greater reactivity level then Spring WebClient. By default don't collect body to list instead starts sending request body as stream. 
+  - start receiving reactive response before all reactive request body sent. 
+  - process Flux<String> correctly in request and response body  
 
 ## Usage
 

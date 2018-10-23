@@ -15,20 +15,12 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.test.context.junit4.SpringRunner;
-import reactivefeign.allfeatures.AllFeaturesController;
 import reactivefeign.webclient.WebReactiveFeign;
 import reactor.core.publisher.Flux;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import reactor.test.StepVerifier;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.core.publisher.Flux.empty;
-import static reactor.core.publisher.Mono.fromFuture;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -54,34 +46,17 @@ public class WebClientFeaturesTest {
     }
 
     @Test
-    public void shouldMirrorStreamingBinaryBodyReactive() throws InterruptedException {
-
-        CountDownLatch countDownLatch = new CountDownLatch(2);
-
-        AtomicInteger sentCount = new AtomicInteger();
-        ConcurrentLinkedQueue<DataBuffer> receivedAll = new ConcurrentLinkedQueue<>();
-
-        CompletableFuture<DataBuffer> firstReceived = new CompletableFuture<>();
+    public void shouldMirrorStreamingBinaryBodyReactive()  {
 
         Flux<DataBuffer> returned = client
                 .mirrorStreamingBinaryBodyReactive(Flux.just(
                         fromByteArray(new byte[]{1,2,3}),
-                        fromByteArray(new byte[]{4,5,6})))
-                .delayUntil(testObject -> sentCount.get() == 1 ? fromFuture(firstReceived)
-                        : empty())
-                .doOnNext(sent -> sentCount.incrementAndGet());
+                        fromByteArray(new byte[]{4,5,6})));
 
-        returned.doOnNext(received -> {
-            receivedAll.add(received);
-            assertThat(receivedAll.size()).isEqualTo(sentCount.get());
-            firstReceived.complete(received);
-            countDownLatch.countDown();
-        }).subscribe();
-
-        countDownLatch.await();
-
-        assertThat(receivedAll.stream().map(DataBuffer::asByteBuffer).collect(Collectors.toList()))
-                .containsExactly(wrap(new byte[]{1,2,3}), wrap(new byte[]{4,5,6}));
+        StepVerifier.create(returned)
+                .expectNextMatches(dataBuffer -> dataBuffer.asByteBuffer().equals(wrap(new byte[]{1,2,3})))
+                .expectNextMatches(dataBuffer -> dataBuffer.asByteBuffer().equals(wrap(new byte[]{4,5,6})))
+                .verifyComplete();
     }
 
     private static DataBuffer fromByteArray(byte[] data){

@@ -29,10 +29,4 @@ public class NotFoundTest extends reactivefeign.NotFoundTest {
     return JettyReactiveFeign.builder();
   }
 
-  @Test
-  public void testJson() throws JsonProcessingException {
-    ObjectMapper objectMapper = new ObjectMapper();
-    String res = objectMapper.writeValueAsString("123");
-    int debug = 0;
-  }
 }

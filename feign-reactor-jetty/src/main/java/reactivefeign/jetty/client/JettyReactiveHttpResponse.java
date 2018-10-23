@@ -12,14 +12,19 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Optional.ofNullable;
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
 
 class JettyReactiveHttpResponse implements ReactiveHttpResponse{
 
+	public static final String CHARSET_DELIMITER = ";charset=";
 	private final ReactiveResponse clientResponse;
 	private final Publisher<ContentChunk> contentChunks;
 	private final Class returnPublisherType;
@@ -56,14 +61,17 @@ class JettyReactiveHttpResponse implements ReactiveHttpResponse{
 		Flux<ByteBuffer> content = content();
 
 		if (returnPublisherType == Mono.class) {
-			if(returnActualClass == ByteBuffer.class){
+			if(returnActualClass == ByteBuffer.class || returnActualClass == byte[].class){
 				return joinChunks().map(ByteBuffer::wrap);
+			} else if(returnActualClass.isAssignableFrom(String.class)){
+				Charset charset = getCharset();
+				return joinChunks().map(bytes -> charset.decode(ByteBuffer.wrap(bytes)).toString());
 			} else {
 				return reactorObjectReader.read(content, objectReader);
 			}
 		}
 		else if (returnPublisherType == Flux.class) {
-			if(returnActualClass == ByteBuffer.class){
+			if(returnActualClass == ByteBuffer.class || returnActualClass == byte[].class){
 				return (Publisher)content;
 			} else {
 				return reactorObjectReader.readElements(content, objectReader);
@@ -74,17 +82,31 @@ class JettyReactiveHttpResponse implements ReactiveHttpResponse{
 		}
 	}
 
+	private Charset getCharset() {
+		return ofNullable(clientResponse.getHeaders().get(CONTENT_TYPE.asString()))
+				.map(header -> {
+					int pos = header.indexOf(CHARSET_DELIMITER);
+					if(pos >= 0){
+						return header.substring(pos + CHARSET_DELIMITER.length());
+					} else {
+						return null;
+					}
+				})
+				.map(Charset::forName)
+				.orElse(UTF_8);
+	}
+
 	private Flux<ByteBuffer> content() {
 		return Flux.from(contentChunks).map(chunk -> {
 			// See https://github.com/eclipse/jetty.project/issues/2429
-//			byte[] data = new byte[chunk.buffer.capacity()];
-//			chunk.buffer.get(data);
-//			chunk.callback.succeeded();
-//			return ByteBuffer.wrap(data);
-
-			ByteBuffer duplicate = chunk.buffer.duplicate();
+			byte[] data = new byte[chunk.buffer.capacity()];
+			chunk.buffer.get(data);
 			chunk.callback.succeeded();
-			return duplicate;
+			return ByteBuffer.wrap(data);
+
+//			ByteBuffer duplicate = chunk.buffer.duplicate();
+//			chunk.callback.succeeded();
+//			return duplicate;
 		});
 	}
 
