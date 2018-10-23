@@ -23,16 +23,23 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
+import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit4.SpringRunner;
 import reactivefeign.ReactiveFeign;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -63,7 +70,7 @@ import static reactor.core.publisher.Mono.just;
 		properties = {"spring.main.web-application-type=reactive"},
 		classes = {AllFeaturesController.class },
 		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@EnableAutoConfiguration(exclude = {org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration.class, ReactiveUserDetailsServiceAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = {ReactiveSecurityAutoConfiguration.class, ReactiveUserDetailsServiceAutoConfiguration.class})
 abstract public class AllFeaturesTest {
 
 	private AllFeaturesApi client;
@@ -181,14 +188,13 @@ abstract public class AllFeaturesTest {
 		Flux<AllFeaturesApi.TestObject> returned = client
 				.mirrorBodyStream(Flux.just(new AllFeaturesApi.TestObject("testMessage1"),
 						new AllFeaturesApi.TestObject("testMessage2"))
-//						.delayUntil(testObject -> sentCount.get() == 1 ? fromFuture(firstReceived)
-//								: empty())
+						.delayUntil(testObject -> sentCount.get() == 1 ? fromFuture(firstReceived)
+								: empty())
 						.doOnNext(sent -> sentCount.incrementAndGet())
 				);
 
 		returned.doOnNext(received -> {
 			receivedCount.incrementAndGet();
-//			assertThat(receivedCount.get()).isEqualTo(sentCount.get());
 			firstReceived.complete(received);
 			countDownLatch.countDown();
 		}).subscribe();
@@ -238,6 +244,18 @@ abstract public class AllFeaturesTest {
 	}
 
 	@Test
+	public void shouldMirrorStringStreamBody() {
+		Flux<String> result = client.mirrorStringBodyStream(
+				Flux.fromArray(new String[]{"a", "b", "c"}));
+
+		StepVerifier.create(result)
+				.expectNext("a")
+				.expectNext("b")
+				.expectNext("c")
+				.verifyComplete();
+	}
+
+	@Test
 	public void shouldMirrorStreamingBinaryBodyReactive() throws InterruptedException {
 
 		CountDownLatch countDownLatch = new CountDownLatch(2);
@@ -264,12 +282,26 @@ abstract public class AllFeaturesTest {
 
 		countDownLatch.await();
 
-		assertThat(receivedAll.stream().collect(Collectors.toList()))
-				.containsExactly(wrap(new byte[]{1,2,3}), wrap(new byte[]{4,5,6}));
+		assertThat(receivedAll.stream()
+				.map(buffer -> {
+					byte[] data = new byte[buffer.limit()];
+					buffer.get(data);
+					return data;
+				}).collect(Collectors.toList()))
+				.containsExactly(new byte[]{1,2,3}, new byte[]{4,5,6});
 	}
 
 	private static ByteBuffer fromByteArray(byte[] data){
 		return ByteBuffer.wrap(data);
+	}
+
+	@Configuration
+	public static class TestConfiguration{
+
+		@Bean
+		public ReactiveWebServerFactory reactiveWebServerFactory(){
+			return new NettyReactiveWebServerFactory();
+		}
 	}
 
 }

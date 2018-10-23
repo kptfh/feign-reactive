@@ -22,7 +22,7 @@ import reactivefeign.ReactiveOptions;
 
 import java.util.concurrent.TimeUnit;
 
-import static reactivefeign.jetty.client.WebReactiveHttpClient.webClient;
+import static reactivefeign.webclient.client.WebReactiveHttpClient.webClient;
 
 /**
  * {@link WebClient} based implementation of reactive Feign

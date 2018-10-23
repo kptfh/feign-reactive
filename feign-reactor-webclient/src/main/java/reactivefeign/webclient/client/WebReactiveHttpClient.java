@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactivefeign.jetty.client;
+package reactivefeign.webclient.client;
 
 import feign.MethodMetadata;
 import org.springframework.core.ParameterizedTypeReference;

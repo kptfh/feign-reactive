@@ -16,8 +16,8 @@
 
 package reactivefeign.jetty.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.async_.JsonFactory;
+import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -25,7 +25,6 @@ import feign.MethodMetadata;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Publisher;
@@ -40,10 +39,14 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.util.concurrent.TimeUnit;
 
 import static feign.Util.resolveLastTypeParameter;
-import static java.util.Optional.ofNullable;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+import static org.eclipse.jetty.http.HttpHeader.ACCEPT;
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
 import static reactivefeign.utils.FeignUtils.getBodyActualType;
 
 /**
@@ -52,7 +55,18 @@ import static reactivefeign.utils.FeignUtils.getBodyActualType;
  */
 public class JettyReactiveHttpClient implements ReactiveHttpClient {
 
-	public static final String CONTENT_TYPE_HEADER = "Content-Type";
+	public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
+	public static final String TEXT = "text/plain";
+	public static final String TEXT_UTF_8 = TEXT+";charset=utf-8";
+
+	public static final String APPLICATION_JSON = "application/json";
+	public static final String APPLICATION_JSON_UTF_8 = APPLICATION_JSON+";charset=utf-8";
+	public static final String APPLICATION_STREAM_JSON = "application/stream+json";
+	public static final String APPLICATION_STREAM_JSON_UTF_8 = APPLICATION_STREAM_JSON+";charset=utf-8";
+
+
+	private static final byte[] NEWLINE_SEPARATOR = {'\n'};
+
 	private final HttpClient httpClient;
 	private final Class bodyActualClass;
 	private final Class returnPublisherClass;
@@ -106,7 +120,9 @@ public class JettyReactiveHttpClient implements ReactiveHttpClient {
 
 		ReactiveRequest.Builder requestBuilder = ReactiveRequest.newBuilder(jettyRequest);
 		if(bodyActualClass != null){
-			requestBuilder.content(provideBody(request));
+			ReactiveRequest.Content content = provideBody(request);
+			requestBuilder.content(content);
+			jettyRequest.getHeaders().put(CONTENT_TYPE.asString(), singletonList(content.getContentType()));
 		}
 
 		Publisher<JettyReactiveHttpResponse> responsePublisher = requestBuilder.build().response(
@@ -122,30 +138,59 @@ public class JettyReactiveHttpClient implements ReactiveHttpClient {
 
 	protected void setUpHeaders(ReactiveHttpRequest request, HttpFields httpHeaders) {
 		request.headers().forEach(httpHeaders::put);
+
+		String acceptHeader;
+		if(CharSequence.class.isAssignableFrom(returnActualClass) && returnPublisherClass == Mono.class){
+			acceptHeader = TEXT;
+		}
+		else if(returnActualClass == ByteBuffer.class || returnActualClass == byte[].class){
+			acceptHeader = APPLICATION_OCTET_STREAM;
+		}
+		else if(returnPublisherClass == Mono.class){
+			acceptHeader = APPLICATION_JSON;
+		}
+		else {
+			acceptHeader = APPLICATION_STREAM_JSON;
+		}
+		httpHeaders.put(ACCEPT.asString(), singletonList(acceptHeader));
 	}
 
 	protected ReactiveRequest.Content provideBody(ReactiveHttpRequest request) {
-		String contentTypeFromHeader = ofNullable(request.headers().get(CONTENT_TYPE_HEADER))
-				.map(strings -> strings.get(0)).orElse(null);
-
 		Publisher<ContentChunk> bodyPublisher;
 		String contentType;
-		if(bodyActualClass == ByteBuffer.class){
-			bodyPublisher = Flux.from(request.body()).map(this::toByteBufferChunk);
-			contentType = "application/octet-stream";
-		}
-		else if(bodyActualClass == byte[].class){
-			bodyPublisher = Flux.from(request.body()).map(this::toByteArrayChunk);
-			contentType = "application/octet-stream";
-		}
-		else {
-			bodyPublisher = Flux.from(request.body()).map(this::toJsonChunk);
-			contentType = MimeTypes.Type.APPLICATION_JSON_UTF_8.asString();
+		if(request.body() instanceof Mono){
+			if(bodyActualClass == ByteBuffer.class){
+				bodyPublisher = ((Mono)request.body()).map(this::toByteBufferChunk);
+				contentType = APPLICATION_OCTET_STREAM;
+			}
+			else if(bodyActualClass == byte[].class){
+				bodyPublisher = Flux.from(request.body()).map(this::toByteArrayChunk);
+				contentType = APPLICATION_OCTET_STREAM;
+			}
+			else if (CharSequence.class.isAssignableFrom(bodyActualClass)){
+				bodyPublisher = Flux.from(request.body()).map(this::toCharSequenceChunk);
+				contentType = TEXT_UTF_8;
+			}
+			else {
+				bodyPublisher = Flux.from(request.body()).map(data -> toJsonChunk(data, false));
+				contentType = APPLICATION_JSON_UTF_8;
+			}
+
+		} else {
+			if(bodyActualClass == ByteBuffer.class){
+				bodyPublisher = Flux.from(request.body()).map(this::toByteBufferChunk);
+				contentType = APPLICATION_OCTET_STREAM;
+			}
+			else if(bodyActualClass == byte[].class){
+				bodyPublisher = Flux.from(request.body()).map(this::toByteArrayChunk);
+				contentType = APPLICATION_OCTET_STREAM;
+			}
+			else {
+				bodyPublisher = Flux.from(request.body()).map(data -> toJsonChunk(data, true));
+				contentType = APPLICATION_STREAM_JSON_UTF_8;
+			}
 		}
 
-		if(contentTypeFromHeader != null){
-			contentType = contentTypeFromHeader;
-		}
 		return ReactiveRequest.Content.fromPublisher(bodyPublisher, contentType);
 	}
 
@@ -157,11 +202,22 @@ public class JettyReactiveHttpClient implements ReactiveHttpClient {
 		return new ContentChunk(ByteBuffer.wrap((byte[])data));
 	}
 
-	protected ContentChunk toJsonChunk(Object data){
+	protected ContentChunk toCharSequenceChunk(Object data){
+		CharBuffer charBuffer = CharBuffer.wrap((CharSequence) data);
+		ByteBuffer byteBuffer = UTF_8.encode(charBuffer);
+		return new ContentChunk(byteBuffer);
+	}
+
+	protected ContentChunk toJsonChunk(Object data, boolean stream){
 		try {
-			ByteBuffer buffer = ByteBuffer.wrap(bodyWriter.writeValueAsBytes(data));
+			ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();
+			bodyWriter.writeValue(byteArrayBuilder, data);
+			if(stream) {
+				byteArrayBuilder.write(NEWLINE_SEPARATOR);
+			}
+			ByteBuffer buffer = ByteBuffer.wrap(byteArrayBuilder.toByteArray());
 			return new ContentChunk(buffer);
-		} catch (JsonProcessingException e) {
+		} catch (java.io.IOException e) {
 			throw new UncheckedIOException(e);
 		}
 	}

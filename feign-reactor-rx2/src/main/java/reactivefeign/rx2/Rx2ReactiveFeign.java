@@ -20,7 +20,7 @@ import reactivefeign.rx2.client.statushandler.Rx2StatusHandler;
 import reactivefeign.rx2.methodhandler.Rx2MethodHandlerFactory;
 import reactivefeign.utils.Pair;
 import reactivefeign.webclient.WebReactiveFeign;
-import reactivefeign.jetty.client.WebReactiveHttpClient;
+import reactivefeign.webclient.client.WebReactiveHttpClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

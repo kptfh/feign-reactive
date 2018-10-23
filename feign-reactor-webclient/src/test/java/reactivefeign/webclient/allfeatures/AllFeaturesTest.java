@@ -16,8 +16,11 @@
 
 package reactivefeign.webclient.allfeatures;
 
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -30,16 +33,25 @@ import reactivefeign.webclient.WebReactiveFeign;
  *
  * Tests ReactiveFeign in conjunction with WebFlux rest controller.
  */
-@RunWith(SpringRunner.class)
-@SpringBootTest(
-		properties = {"spring.main.web-application-type=reactive"},
-		classes = {AllFeaturesController.class },
-		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@EnableAutoConfiguration(exclude = {org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration.class, ReactiveUserDetailsServiceAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = {ReactiveSecurityAutoConfiguration.class, ReactiveUserDetailsServiceAutoConfiguration.class})
 public class AllFeaturesTest extends reactivefeign.allfeatures.AllFeaturesTest {
 
 	@Override
 	protected ReactiveFeign.Builder<reactivefeign.allfeatures.AllFeaturesApi> builder() {
 		return WebReactiveFeign.builder();
+	}
+
+    //Netty's WebClient is not able to do this trick
+	@Ignore
+	@Test
+	@Override
+	public void shouldReturnFirstResultBeforeSecondSent() {
+	}
+
+	//WebClient is not able to do this
+	@Ignore
+	@Test
+	@Override
+	public void shouldMirrorStringStreamBody() {
 	}
 }

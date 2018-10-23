@@ -130,7 +130,7 @@ public abstract class RetryingTest {
     for (int attempt = 0; attempt < failedAttemptsNo; attempt++) {
       String nextState = "attempt" + attempt;
       rule.stubFor(
-          get(urlEqualTo(url)).withHeader("Accept", equalTo("application/json"))
+          get(urlEqualTo(url))
               .inScenario(scenario).whenScenarioStateIs(state)
               .willReturn(failResponse).willSetStateTo(nextState));
 
@@ -138,7 +138,7 @@ public abstract class RetryingTest {
     }
 
     rule.stubFor(get(urlEqualTo(url))
-        .withHeader("Accept", equalTo("application/json")).inScenario(scenario)
+        .inScenario(scenario)
         .whenScenarioStateIs(state).willReturn(response));
   }
 
