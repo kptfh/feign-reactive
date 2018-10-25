@@ -12,7 +12,6 @@
         <module>feign-reactor-webclient</module>
         <module>feign-reactor-cloud</module>
         <module>feign-reactor-rx2</module>
-        <module>feign-reactor-jetty</module>
     </modules>
 
     <name>feign-reactive</name>
@@ -66,10 +65,6 @@
         <!--Rx2-->
         <reactor-adapter.version>3.1.6.RELEASE</reactor-adapter.version>
         <rxjava2.version>2.2.2</rxjava2.version>
-
-        <!--Jetty-->
-        <jetty-reactive-httpclient.version>1.0.1</jetty-reactive-httpclient.version>
-        <json-reactor.version>0.0.1</json-reactor.version>
 
         <!-- Tests -->
         <spring-boot-starter-webflux.version>2.0.5.RELEASE</spring-boot-starter-webflux.version>
@@ -334,12 +329,6 @@
                 <version>${jetty-reactive-httpclient.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>io.kptfh.reactivejson</groupId>
-                <artifactId>json-reactor</artifactId>
-                <version>${json-reactor.version}</version>
-            </dependency>
-
             <!--Test-->
             <dependency>
                 <groupId>junit</groupId>
@@ -440,14 +429,6 @@
 
         </dependencies>
     </dependencyManagement>
-
-    <repositories>
-        <repository>
-            <id>bintray-kptfh-feign-reactive</id>
-            <name>bintray</name>
-            <url>https://dl.bintray.com/kptfh/json-reactive</url>
-        </repository>
-    </repositories>
 
     <build>
         <pluginManagement>
