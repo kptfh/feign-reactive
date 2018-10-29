@@ -26,6 +26,13 @@
         </license>
     </licenses>
 
+    <scm>
+        <url>https://svn.apache.org/viewvc/maven</url>
+        <connection>scm:git:git://github.com/Playtika/feign-reactive.git</connection>
+        <developerConnection>scm:git:git@github.com:Playtika/feign-reactive.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
     <developers>
         <developer>
             <id>kptfh</id>
