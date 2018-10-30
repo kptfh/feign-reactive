@@ -526,7 +526,7 @@
                         </execution>
                     </executions>
                     <configuration>
-                        <doclint>none</doclint>
+                        <doclint>-Xdoclint:none</doclint>
                         <failOnError>false</failOnError>
                     </configuration>
                 </plugin>
