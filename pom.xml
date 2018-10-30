@@ -17,6 +17,7 @@
 
     <name>feign-reactive</name>
     <description>Use Feign client on WebClient</description>
+    <url>https://github.com/Playtika/feign-reactive</url>
 
     <licenses>
         <license>
@@ -100,6 +101,7 @@
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
         <versions-maven-plugin.version>2.3</versions-maven-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.3</nexus-staging-maven-plugin.version>
+        <maven.javadoc.plugin.version>3.0.1</maven.javadoc.plugin.version>
 
         <!-- Sonar -->
         <surefire.plugin.version>2.19.1</surefire.plugin.version>
@@ -514,6 +516,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven.javadoc.plugin.version}</version>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -522,6 +525,10 @@
                             </goals>
                         </execution>
                     </executions>
+                    <configuration>
+                        <doclint>none</doclint>
+                        <failOnError>false</failOnError>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
