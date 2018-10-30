@@ -536,6 +536,39 @@
         </pluginManagement>
 
         <plugins>
+            <!-- Attach Javadoc to release -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <doclint>-Xdoclint:none</doclint>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
+
+            <!-- Attach sources to release -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven.source.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Jacoco Code Coverage -->
             <!--<plugin>-->
                 <!--<groupId>org.jacoco</groupId>-->
