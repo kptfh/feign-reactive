@@ -1,11 +1,6 @@
-
-[![CircleCI](https://circleci.com/gh/Playtika/feign-reactive/tree/develop.svg?style=shield&circle-token=7436cccc44c3229204d0d94c3a1606feb02cb534)](https://circleci.com/gh/Playtika/feign-reactive/tree/develop)
-[![codecov](https://codecov.io/gh/Playtika/feign-reactive/branch/develop/graph/badge.svg)](https://codecov.io/gh/Playtika/feign-reactive)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ce80f97d24fb4371a9f71cf44e94b0b0)](https://www.codacy.com/app/PlaytikaGithub/feign-reactive?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Playtika/feign-reactive&amp;utm_campaign=Badge_Grade)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.playtika.reactivefeign/feign-reactor/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.playtika.reactivefeign/feign-reactor)
-
-
 # feign-reactive
+
+[ ![Download](https://api.bintray.com/packages/kptfh/feign-reactive/client/images/download.svg) ](https://bintray.com/kptfh/feign-reactive/client/_latestVersion)
 
 Use Feign with Spring WebFlux
 
@@ -134,6 +129,45 @@ IcecreamServiceApi client = Rx2ReactiveFeign
 /* Execute nonblocking requests */
 Flowable<Flavor> flavors = icecreamApi.getAvailableFlavors();
 Observable<Mixin> mixins = icecreamApi.getAvailableMixins();
+```
+
+## Maven
+
+```xml
+<repositories>
+    <repository>
+        <id>bintray-kptfh-feign-reactive</id>
+        <name>bintray</name>
+        <url>https://dl.bintray.com/kptfh/feign-reactive</url>
+    </repository>
+</repositories>
+...
+<dependencies>
+    ...
+    
+    <dependency>
+        <groupId>io.github.reactivefeign</groupId>
+        <artifactId>feign-reactor-cloud</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+    
+    or if you don't need cloud specific functionality
+    
+    <dependency>
+        <groupId>io.github.reactivefeign</groupId>
+        <artifactId>feign-reactor-webclient</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+    
+    or if you tend to use Rx2 interfaces
+    
+    <dependency>
+            <groupId>io.github.reactivefeign</groupId>
+            <artifactId>feign-reactor-rx2</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+    ...
+</dependencies>
 ```
 
 ## License
