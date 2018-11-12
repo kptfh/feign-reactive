@@ -121,9 +121,7 @@ public class JettyReactiveHttpClient implements ReactiveHttpClient {
 
 		ReactiveRequest.Builder requestBuilder = ReactiveRequest.newBuilder(jettyRequest);
 		if(bodyActualClass != null){
-			ReactiveRequest.Content content = provideBody(request);
-			requestBuilder.content(content);
-			jettyRequest.getHeaders().put(CONTENT_TYPE.asString(), singletonList(content.getContentType()));
+			requestBuilder.content(provideBody(request));
 		}
 
 		return Mono.<ReactiveHttpResponse>from(requestBuilder.build().response((response, content) -> Mono.just(
