@@ -11,25 +11,18 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package reactivefeign.jetty;
+package reactivefeign.cloud;
 
 import reactivefeign.ReactiveFeign;
 import reactivefeign.testcase.IcecreamServiceApi;
 
-import java.util.function.Predicate;
-
 /**
  * @author Sergii Karpenko
  */
-public class RequestInterceptorTest extends reactivefeign.RequestInterceptorTest {
+public class SmokeTest extends reactivefeign.SmokeTest {
 
   @Override
   protected ReactiveFeign.Builder<IcecreamServiceApi> builder() {
-    return JettyReactiveFeign.builder();
-  }
-
-  @Override
-  protected Predicate<Throwable> notAuthorizedException() {
-    return throwable -> throwable instanceof org.eclipse.jetty.client.HttpResponseException;
+    return CloudReactiveFeign.builder();
   }
 }

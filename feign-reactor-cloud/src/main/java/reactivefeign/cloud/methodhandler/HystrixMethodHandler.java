@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import static feign.Feign.configKey;
@@ -36,14 +37,13 @@ public class HystrixMethodHandler implements MethodHandler {
             Target target, MethodMetadata methodMetadata,
             MethodHandler methodHandler,
             CloudReactiveFeign.SetterFactory setterFactory,
-            @Nullable
-                    Function<Throwable, Object> fallbackFactory) {
+            @Nullable Function<Throwable, Object> fallbackFactory) {
         checkNotNull(target, "target must be not null");
 
         checkNotNull(methodMetadata, "methodMetadata must be not null");
         method = Arrays.stream(target.type().getMethods())
                 .filter(method -> configKey(target.type(), method).equals(methodMetadata.configKey()))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException());
+                .findFirst().orElseThrow(IllegalArgumentException::new);
         method.setAccessible(true);
 
         returnPublisherType = ((ParameterizedType) methodMetadata.returnType()).getRawType();
@@ -87,7 +87,11 @@ public class HystrixMethodHandler implements MethodHandler {
         }.toObservable();
 
         if(returnPublisherType == Mono.class){
-            return Mono.from(RxReactiveStreams.toPublisher(observable.toSingle()));
+            return Mono.from(RxReactiveStreams.toPublisher(observable.toSingle()))
+                    .onErrorResume(
+                            throwable -> throwable instanceof NoSuchElementException
+                                         && throwable.getMessage().equals("Observable emitted no items"),
+                            throwable -> Mono.empty());
         } else if(returnPublisherType == Flux.class){
             return Flux.from(RxReactiveStreams.toPublisher(observable));
         } else {

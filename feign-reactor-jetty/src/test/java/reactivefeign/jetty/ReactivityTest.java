@@ -23,9 +23,4 @@ public class ReactivityTest extends reactivefeign.ReactivityTest {
   protected ReactiveFeign.Builder<IcecreamServiceApi> builder() {
     return JettyReactiveFeign.builder();
   }
-
-  @Override
-  public void shouldRunReactively() throws JsonProcessingException {
-    super.shouldRunReactively();
-  }
 }
