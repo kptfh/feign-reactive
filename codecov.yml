@@ -1,2 +1,2 @@
 ignore:
-  - " feign-reactor-benchmarks/**/*"
+  - "feign-reactor-benchmarks/**/*"
