@@ -1,12 +1,12 @@
 | Benchmark | Mode  |  Cnt  | Score  | Error  | Units |
 |:---       |   :-: |   :-: |   :-:  |   :-:  |  :-:  |
-|ParallelRequestBenchmarks.feignJava11 |    thrpt |  15 |  89.855 | ± 22.715 | ops/s
-|ParallelRequestBenchmarks.feignJava11H2c | thrpt |  15 | 100.028 | ± 37.007 | ops/s
-|ParallelRequestBenchmarks.feignJetty |     thrpt |  15 |  63.799 | ±  7.553 | ops/s
-|ParallelRequestBenchmarks.feignJettyH2c |  thrpt |  15 |  58.913 | ± 10.856 | ops/s
-|ParallelRequestBenchmarks.feign |          thrpt |  15 |  52.342 | ± 34.554 | ops/s
-|ParallelRequestBenchmarks.feignWebClient | thrpt |  15 |  55.352 | ± 12.373 | ops/s
-|ParallelRequestBenchmarks.webClient |      thrpt |  15 |  63.700 | ± 13.379 | ops/s
+|ParallelRequestBenchmarks.feignJava11    | thrpt |  15 | 91.653 | ± 26.654 | ops/s
+|ParallelRequestBenchmarks.feignJava11H2c | thrpt |  15 | 97.272 | ± 29.829 | ops/s
+|ParallelRequestBenchmarks.feign          | thrpt |  15 | 57.341 | ± 36.267 | ops/s
+|ParallelRequestBenchmarks.feignJetty     | thrpt |  15 | 71.343 | ± 26.456 | ops/s
+|ParallelRequestBenchmarks.feignJettyH2c  | thrpt |  15 | 52.244 | ± 13.242 | ops/s
+|ParallelRequestBenchmarks.feignWebClient | thrpt |  15 | 47.264 | ± 10.962 | ops/s
+|ParallelRequestBenchmarks.webClient      | thrpt |  15 | 66.315 | ± 13.116 | ops/s
 
 
 To run benchmarks on Windows increase the number of ephemeral ports 
