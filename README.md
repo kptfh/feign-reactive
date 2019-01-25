@@ -23,6 +23,8 @@ non-blocking HTTP client of Spring WebClient.
   
   **_feign-reactor-cloud_** : Spring Cloud implementation of reactor Feign (Ribbon/Hystrix)
   
+  **_feign-reactor-java11_** : Java 11 HttpClient based implementation of reactor Feign (!!! Winner of benchmarks !!!)
+  
   **_feign-reactor-rx2_** : Rx2 compatible implementation of reactor Feign (depends on feign-reactor-webclient)
   
   **_feign-reactor-jetty_** : experimental Reactive Jetty client based implementation of reactor Feign (doesn't depend on feign-reactor-webclient). In future will allow to write pure Rx2 version.
