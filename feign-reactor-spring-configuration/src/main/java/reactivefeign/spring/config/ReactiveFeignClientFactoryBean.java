@@ -106,24 +106,27 @@ class ReactiveFeignClientFactoryBean implements FactoryBean<Object>, Initializin
 
 	protected void configureUsingConfiguration(ReactiveFeignContext context, ReactiveFeignBuilder builder) {
 
-		ReactiveRetryPolicy retryer = getOptional(context, ReactiveRetryPolicy.class);
-		if (retryer != null) {
-			builder.retryWhen(retryer);
-		}
-		ReactiveStatusHandler statusHandler = getOptional(context, ReactiveStatusHandler.class);
-		if (statusHandler != null) {
-			builder.statusHandler(statusHandler);
-		}
 		ReactiveOptions options = getOptional(context, ReactiveOptions.class);
 		if (options != null) {
 			builder.options(options);
 		}
+
+		ReactiveRetryPolicy retryer = getOptional(context, ReactiveRetryPolicy.class);
+		if (retryer != null) {
+			builder.retryWhen(retryer);
+		}
+
 		Map<String, ReactiveHttpRequestInterceptor> requestInterceptors = context.getInstances(
 				this.name, ReactiveHttpRequestInterceptor.class);
 		if (requestInterceptors != null) {
 			for(ReactiveHttpRequestInterceptor interceptor : requestInterceptors.values()){
 				builder.addRequestInterceptor(interceptor);
 			}
+		}
+
+		ReactiveStatusHandler statusHandler = getOptional(context, ReactiveStatusHandler.class);
+		if (statusHandler != null) {
+			builder.statusHandler(statusHandler);
 		}
 
 		if (decode404) {
@@ -147,17 +150,17 @@ class ReactiveFeignClientFactoryBean implements FactoryBean<Object>, Initializin
 			builder.retryWhen(retryer);
 		}
 
-		if (config.getStatusHandler() != null) {
-			ReactiveStatusHandler errorDecoder = getOrInstantiate(config.getStatusHandler());
-			builder.statusHandler(errorDecoder);
-		}
-
 		if (config.getRequestInterceptors() != null && !config.getRequestInterceptors().isEmpty()) {
 			// this will add request interceptor to builder, not replace existing
 			for (Class<ReactiveHttpRequestInterceptor> bean : config.getRequestInterceptors()) {
 				ReactiveHttpRequestInterceptor interceptor = getOrInstantiate(bean);
 				builder.addRequestInterceptor(interceptor);
 			}
+		}
+
+		if (config.getStatusHandler() != null) {
+			ReactiveStatusHandler errorDecoder = getOrInstantiate(config.getStatusHandler());
+			builder.statusHandler(errorDecoder);
 		}
 
 		if (config.getDecode404() != null) {
