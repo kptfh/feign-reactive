@@ -55,6 +55,7 @@ import reactivefeign.webclient.WebReactiveOptions;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -70,7 +71,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DirtiesContext
 public class SampleConfigurationsTest {
 
-	static final int VOLUME_THRESHOLD = 1;
+	static final int VOLUME_THRESHOLD = 2;
 	public static final String FALLBACK_VALUE = "Fallback";
 	public static final int UPDATE_INTERVAL = 5;
 	public static final int SLEEP_WINDOW = 1000;
@@ -109,7 +110,6 @@ public class SampleConfigurationsTest {
 					        && throwable.getCause().getCause() instanceof ReadTimeoutException)
 					.verify();
 		});
-
 	}
 
 	@Test
@@ -139,15 +139,22 @@ public class SampleConfigurationsTest {
 				.willReturn(aResponse()
 						.withStatus(403)));
 
-		Mono<Object[]> results = Mono.zip(
-				IntStream.range(0, VOLUME_THRESHOLD + 1).mapToObj(i -> errorDecoderSampleClient.sampleMethod()).collect(Collectors.toList()),
-				objects -> objects);
+		List<Object> results = IntStream.range(0, VOLUME_THRESHOLD + 1).mapToObj(i -> {
+			try {
+				try {
+					return errorDecoderSampleClient.sampleMethod().block();
+				} finally {
+					Thread.sleep(UPDATE_INTERVAL * 2);
+				}
+			} catch (Throwable t) {
+				return t;
+			}
+		}).collect(Collectors.toList());
 
-		StepVerifier.create(results)
-				.expectError(HystrixBadRequestException.class)
-				.verify();
+		assertThat(results.get(0)).isInstanceOf(HystrixBadRequestException.class);
+		assertThat(results.get(results.size() - 1)).isInstanceOf(HystrixBadRequestException.class);
 
-		assertThat(mockHttpServer.getAllServeEvents().size()).isEqualTo((VOLUME_THRESHOLD + 1) * 2/*retries*/);
+		assertThat(mockHttpServer.getAllServeEvents().size()).isEqualTo(VOLUME_THRESHOLD + 1);
 		//wait for circuit breaker updated its status
 		Thread.sleep(5);
 		assertThat(HystrixCircuitBreaker.Factory.getInstance(asKey("ErrorDecoderSampleClient#sampleMethod()"))
@@ -161,13 +168,20 @@ public class SampleConfigurationsTest {
 				.willReturn(aResponse()
 						.withStatus(503)));
 
-		Mono<Object[]> results = Mono.zip(
-				IntStream.range(0, VOLUME_THRESHOLD + 1).mapToObj(i -> errorDecoderSampleClient.sampleMethod()).collect(Collectors.toList()),
-				objects -> objects);
+		List<Object> results = IntStream.range(0, VOLUME_THRESHOLD + 1).mapToObj(i -> {
+			try {
+				try {
+					return errorDecoderSampleClient.sampleMethod().block();
+				} finally {
+					Thread.sleep(UPDATE_INTERVAL * 2);
+				}
+			} catch (Throwable t) {
+				return t;
+			}
+		}).collect(Collectors.toList());
 
-		StepVerifier.create(results)
-				.expectError(ErrorDecoder.OriginalError.class)
-				.verify();
+		assertThat(results.get(0)).isInstanceOf(ErrorDecoder.OriginalError.class);
+		assertThat(results.get(results.size() - 1)).isInstanceOf(HystrixRuntimeException.class);
 
 		//wait for circuit breaker updated its status
 		Thread.sleep(5);
@@ -302,6 +316,7 @@ public class SampleConfigurationsTest {
 		Hystrix.reset();
 		//to close circuit breaker
 		Thread.sleep(SLEEP_WINDOW);
+		mockHttpServer.resetAll();
 	}
 
 	@AfterClass

@@ -34,7 +34,7 @@ import static reactivefeign.cloud.LoadBalancingReactiveHttpClientTest.TestMonoIn
 public class HystrixReactiveHttpClientTest {
 
     public static final int SLEEP_WINDOW = 1000;
-    public static final int VOLUME_THRESHOLD = 1;
+    public static final int VOLUME_THRESHOLD = 2;
     public static final String FALLBACK = "fallback";
     public static final String SUCCESS = "success!";
     public static final int UPDATE_INTERVAL = 5;
@@ -119,12 +119,11 @@ public class HystrixReactiveHttpClientTest {
     public void shouldOpenCircuitBreakerAndCloseAfterSleepTime() throws InterruptedException {
 
         int callsNo = VOLUME_THRESHOLD + 1;
-        LoadBalancingReactiveHttpClientTest.mockSuccessAfterSeveralAttempts(
-                server, MONO_URL, VOLUME_THRESHOLD, SC_SERVICE_UNAVAILABLE,
-                aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(SUCCESS));
+
+        server.stubFor(get(urlEqualTo(MONO_URL))
+                .willReturn(aResponse()
+                        .withStatus(SC_SERVICE_UNAVAILABLE)
+                        .withHeader("Retry-After", "1")));
 
         TestMonoInterface client = BuilderUtils.<TestMonoInterface>cloudBuilder()
                 .setHystrixCommandSetterFactory(getSetterFactory(testNo))
@@ -136,7 +135,7 @@ public class HystrixReactiveHttpClientTest {
                 try {
                     return client.getMono().block();
                 } finally {
-                    Thread.sleep(UPDATE_INTERVAL);
+                    Thread.sleep(UPDATE_INTERVAL * 2);
                 }
             } catch (Throwable t) {
                 return t;
@@ -160,6 +159,11 @@ public class HystrixReactiveHttpClientTest {
 
         //wait to circuit breaker get closed again
         Thread.sleep(SLEEP_WINDOW);
+
+        server.stubFor(get(urlEqualTo(MONO_URL))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(SUCCESS)));
 
         //check that circuit breaker get closed again
         List<Object> resultsAfterSleep = IntStream.range(0, callsNo).mapToObj(i -> {
