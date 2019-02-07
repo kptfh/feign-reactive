@@ -138,6 +138,11 @@ Flowable<Flavor> flavors = icecreamApi.getAvailableFlavors();
 Observable<Mixin> mixins = icecreamApi.getAvailableMixins();
 ```
 
+## Spring Auto-Configuration
+
+You can enable auto-configuration of reactive Feign clients as Sring beans just by adding `feign-reactor-spring-configuration` module to classpath. 
+[Spring Auto-Configuration module](https://github.com/Playtika/feign-reactive/tree/develop/feign-reactor-spring-configuration)
+
 ## License
 
 Library distributed under Apache License Version 2.0.
