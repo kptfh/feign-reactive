@@ -65,9 +65,12 @@ Build the client :
 ```java
 
 /* Create instance of your API */
-IcecreamServiceApi client = ReactiveFeign
-    .builder()
-    .target(IcecreamServiceApi.class, "http://www.icecreame.com")
+IcecreamServiceApi client = 
+             WebReactiveFeign  //WebClient based reactive feign  
+             //JettyReactiveFeign //Jetty http client based
+             //Java11ReactiveFeign //Java 11 http client based
+            .<IcecreamServiceApi>builder()
+            .target(IcecreamServiceApi.class, "http://www.icecreame.com")
 
 /* Execute nonblocking requests */
 Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();
@@ -77,20 +80,18 @@ Flux<Mixin> mixins = icecreamApi.getAvailableMixins();
 or cloud aware client :
 
 ```java
- IcecreamServiceApi client = CloudReactiveFeign.<IcecreamServiceApi>builder()
-    .setFallback(new TestInterface() {
-        @Override
-        public Mono<String> get() {
-            return Mono.just("fallback");
-        }
-    })
-    .setLoadBalancerCommand(
-         LoadBalancerCommand.builder()
-                 .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
-                 .withRetryHandler(new DefaultLoadBalancerRetryHandler(1, 1, true))
-                 .build()
-    )
-    .target(IcecreamServiceApi.class, "http://" + serviceName);
+ IcecreamServiceApi client = CloudReactiveFeign.<IcecreamServiceApi>builder(WebReactiveFeign.builder())
+            .setLoadBalancerCommandFactory(s -> LoadBalancerCommand.builder()
+                    .withLoadBalancer(AbstractLoadBalancer.class.cast(getNamedLoadBalancer(serviceName)))
+                    .withRetryHandler(new DefaultLoadBalancerRetryHandler(1, 1, true))
+                    .build())
+            .fallback(() -> Mono.just(new IcecreamServiceApi() {
+                @Override
+                public Mono<String> get() {
+                    return Mono.just("fallback");
+                }
+            }))
+            .target(IcecreamServiceApi.class,  "http://" + serviceName);
 
 /* Execute nonblocking requests */
 Flux<Flavor> flavors = icecreamApi.getAvailableFlavors();
