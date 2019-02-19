@@ -20,24 +20,20 @@ import java.net.URISyntaxException;
  */
 public class RibbonPublisherClient implements PublisherHttpClient {
 
-    private final LoadBalancerCommandFactory loadBalancerCommandFactory;
-    private String serviceName;
+    private final LoadBalancerCommand<Object> loadBalancerCommand;
     private final PublisherHttpClient publisherClient;
     private final Type publisherType;
 
-    public RibbonPublisherClient(LoadBalancerCommandFactory loadBalancerCommandFactory,
-                                 String serviceName,
+    public RibbonPublisherClient(LoadBalancerCommand<Object> loadBalancerCommand,
                                  PublisherHttpClient publisherClient,
                                  Type publisherType) {
-        this.loadBalancerCommandFactory = loadBalancerCommandFactory;
-        this.serviceName = serviceName;
+        this.loadBalancerCommand = loadBalancerCommand;
         this.publisherClient = publisherClient;
         this.publisherType = publisherType;
     }
 
     @Override
     public Publisher<Object> executeRequest(ReactiveHttpRequest request) {
-        LoadBalancerCommand<Object> loadBalancerCommand = loadBalancerCommandFactory.apply(serviceName);
         if (loadBalancerCommand != null) {
             Observable<?> observable = loadBalancerCommand.submit(server -> {
 

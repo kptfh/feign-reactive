@@ -34,7 +34,7 @@ import static reactivefeign.cloud.LoadBalancingReactiveHttpClientTest.TestMonoIn
 public class HystrixReactiveHttpClientTest {
 
     public static final int SLEEP_WINDOW = 1000;
-    public static final int VOLUME_THRESHOLD = 2;
+    public static final int VOLUME_THRESHOLD = 1;
     public static final String FALLBACK = "fallback";
     public static final String SUCCESS = "success!";
     public static final int UPDATE_INTERVAL = 5;
@@ -135,7 +135,7 @@ public class HystrixReactiveHttpClientTest {
                 try {
                     return client.getMono().block();
                 } finally {
-                    Thread.sleep(UPDATE_INTERVAL * 2);
+                    Thread.sleep(UPDATE_INTERVAL * 10);
                 }
             } catch (Throwable t) {
                 return t;
