@@ -50,7 +50,8 @@ Here is the list of bean classes that will be used by reactive feign client if t
 ## Cloud specific configuration
 #### Ribbon
 `LoadBalancerCommandFactory` or `RetryHandler` beans defined in configuration will used to configure ribbon for corresponding client
-####Hystrix
+
+#### Hystrix
 `CloudReactiveFeign.SetterFactory` bean defined in configuration will be used to configure hystrix for client
 
 ## Not all the same
