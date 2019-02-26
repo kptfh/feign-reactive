@@ -11,6 +11,13 @@ Thus all interfaces annotated with `@ReactiveFeignClient` annotation will be ins
 
 You should specify `name` attribute in this annotation. Feign client bean will be registered with the name of `name + "ReactiveFeignClient"`
 if you had not specified `qualifier` attribute.
+
+In cloud mode `name` attribute will be used as eureka application name. 
+If you need several feign clients for one eureka application 
+you should specify eureka application manually in application.yml for feign client with name 
+that differs from eureka application name.
+See example in [sample project](https://github.com/kptfh/feign-reactive-sample/blob/master/feign/src/main/resources/application.yml)
+
 In cloudless mode you need to specify `url` attribute.
 
 To configure you feign client as cloud ready (Hystrix + Ribbon) you need to add 
