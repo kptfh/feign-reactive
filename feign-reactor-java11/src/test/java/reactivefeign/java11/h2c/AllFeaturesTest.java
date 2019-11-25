@@ -16,29 +16,21 @@
 
 package reactivefeign.java11.h2c;
 
-import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.ServerConnector;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
-import org.springframework.boot.web.embedded.jetty.JettyReactiveWebServerFactory;
-import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
-import org.springframework.boot.web.server.Http2;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import reactivefeign.ReactiveFeign;
 import reactivefeign.allfeatures.AllFeaturesFeign;
 import reactivefeign.allfeatures.AllFeaturesFeignTest;
+import reactivefeign.spring.server.config.TestServerConfigurations;
 
-import static reactivefeign.ReactivityTest.CALLS_NUMBER;
 import static reactivefeign.java11.h2c.TestUtils.builderHttp2;
+import static reactivefeign.spring.server.config.TestServerConfigurations.UNDERTOW_H2C;
 
 /**
  * @author Sergii Karpenko
@@ -46,43 +38,27 @@ import static reactivefeign.java11.h2c.TestUtils.builderHttp2;
  * Tests ReactiveFeign in conjunction with WebFlux rest controller.
  */
 @EnableAutoConfiguration(exclude = {ReactiveSecurityAutoConfiguration.class, ReactiveUserDetailsServiceAutoConfiguration.class})
-@ContextConfiguration(classes={AllFeaturesTest.TestConfiguration.class})
-@ActiveProfiles("jetty-h2")
+@ContextConfiguration(classes={TestServerConfigurations.class})
+@ActiveProfiles(UNDERTOW_H2C)
 public class AllFeaturesTest extends AllFeaturesFeignTest {
+
+	@Value("${spring.profiles.active}")
+	private String activeProfile;
 
 	@Override
 	protected ReactiveFeign.Builder<AllFeaturesFeign> builder() {
 		return builderHttp2();
 	}
 
-	@Configuration
-	@Profile("jetty-h2")
-	public static class TestConfiguration{
-
-		@Bean
-		public ReactiveWebServerFactory reactiveWebServerFactory(){
-			JettyReactiveWebServerFactory jettyReactiveWebServerFactory = new JettyReactiveWebServerFactory();
-			Http2 http2 = new Http2();
-			http2.setEnabled(true);
-			jettyReactiveWebServerFactory.setHttp2(http2);
-			jettyReactiveWebServerFactory.addServerCustomizers(serverJetty -> {
-				//remove old connectors
-				ServerConnector connector = (ServerConnector) serverJetty.getConnectors()[0];
-				serverJetty.removeConnector(connector);
-
-				HttpConfiguration httpConfig = new HttpConfiguration();
-				HTTP2CServerConnectionFactory http2CFactory = new HTTP2CServerConnectionFactory(httpConfig);
-				http2CFactory.setMaxConcurrentStreams(CALLS_NUMBER);
-				ServerConnector connectorH2c = new ServerConnector(serverJetty,
-						new HttpConnectionFactory(httpConfig),
-						http2CFactory
-				);
-				connectorH2c.setPort(connector.getPort());
-				serverJetty.addConnector(connectorH2c);
-			});
-			return jettyReactiveWebServerFactory;
+	@Test
+	@Override
+	public void shouldMirrorStreamingBinaryBodyReactive() throws InterruptedException {
+		if(activeProfile.equals(UNDERTOW_H2C)){
+			return;
 		}
+		super.shouldMirrorStreamingBinaryBodyReactive();
 	}
+
 
 	//Java 11 HttpClient is not able to do this trick
 	@Ignore
