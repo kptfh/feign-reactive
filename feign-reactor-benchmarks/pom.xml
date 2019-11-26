@@ -76,7 +76,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec-http</artifactId>
-            <version>4.1.0.Beta8</version>
+            <version>5.0.0.Alpha2</version>
         </dependency>
 
         <dependency>
