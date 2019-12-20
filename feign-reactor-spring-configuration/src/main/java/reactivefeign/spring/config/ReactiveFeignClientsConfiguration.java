@@ -20,7 +20,6 @@ package reactivefeign.spring.config;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
 import feign.Contract;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -46,7 +45,6 @@ import reactivefeign.webclient.WebReactiveFeign;
 
 import java.time.Clock;
 
-
 /**
  * patterned after org.springframework.cloud.netflix.feign.FeignClientsConfiguration
  */
@@ -61,7 +59,7 @@ public class ReactiveFeignClientsConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnClass(MeterRegistry.class)
+	@ConditionalOnClass(name = "io.micrometer.core.instrument.MeterRegistry")
 	@ConditionalOnProperty(name = "reactive.feign.metrics.enabled", havingValue = "true")
 	public MicrometerReactiveLogger metricsReactiveLogger() {
 		return MicrometerReactiveLogger.basicTimer();
@@ -74,19 +72,20 @@ public class ReactiveFeignClientsConfiguration {
 		return new DefaultReactiveLogger(Clock.systemUTC());
 	}
 
-
 	@Configuration
-	@ConditionalOnClass({JettyReactiveFeign.class, org.eclipse.jetty.client.HttpClient.class})
-	@ConditionalOnProperty(name = "reactive.feign.jetty", havingValue = "true")
-	protected static class ReactiveFeignJettyConfiguration {
+	protected static class ReactiveFeignConfiguration{
+		@Configuration
+		@ConditionalOnClass({JettyReactiveFeign.class, org.eclipse.jetty.client.HttpClient.class})
+		@ConditionalOnProperty(name = "reactive.feign.jetty", havingValue = "true")
+		protected static class ReactiveFeignJettyConfiguration {
 
-		@Bean
-		@Scope("prototype")
-		public ReactiveFeignBuilder reactiveFeignBuilder(
-				JettyHttpClientFactory jettyHttpClientFactory) {
-			return JettyReactiveFeign.builder(jettyHttpClientFactory);
+			@Bean
+			@Scope("prototype")
+			public ReactiveFeignBuilder reactiveFeignBuilder(
+					JettyHttpClientFactory jettyHttpClientFactory) {
+				return JettyReactiveFeign.builder(jettyHttpClientFactory);
+			}
 		}
-	}
 
 	@Configuration
 	@ConditionalOnClass({Java11ReactiveFeign.class, java.net.http.HttpClient.class})
@@ -96,29 +95,30 @@ public class ReactiveFeignClientsConfiguration {
 		@Bean
 		@Scope("prototype")
 		public ReactiveFeignBuilder reactiveFeignBuilder(
-				java.net.http.HttpClient.Builder httpClientBuilder) {
-			return Java11ReactiveFeign.builder(httpClientBuilder);
+				/*java.net.http.HttpClient.Builder httpClientBuilder*/) {
+			return Java11ReactiveFeign.builder(/*httpClientBuilder*/);
+		}
+	}
+
+		@Configuration
+		@ConditionalOnClass({WebReactiveFeign.class, WebClient.class})
+		@ConditionalOnProperty(name = {"reactive.feign.jetty", "reactive.feign.java11"}, havingValue = "false", matchIfMissing = true)
+		protected static class ReactiveFeignWebConfiguration {
+
+			@Bean
+			@Scope("prototype")
+			public ReactiveFeignBuilder reactiveFeignBuilder(
+					WebClient.Builder builder,
+					@Autowired(required = false) WebClientFeignCustomizer webClientCustomizer) {
+				return webClientCustomizer != null
+						? WebReactiveFeign.builder(builder, webClientCustomizer)
+						: WebReactiveFeign.builder(builder);
+			}
 		}
 	}
 
 	@Configuration
-	@ConditionalOnClass({WebReactiveFeign.class, WebClient.class})
-	@ConditionalOnProperty(name = {"reactive.feign.jetty", "reactive.feign.java11"}, havingValue = "false", matchIfMissing = true)
-	protected static class ReactiveFeignWebConfiguration {
-
-		@Bean
-		@Scope("prototype")
-		public ReactiveFeignBuilder reactiveFeignBuilder(
-				WebClient.Builder builder,
-				@Autowired(required = false) WebClientFeignCustomizer webClientCustomizer) {
-			return webClientCustomizer != null
-					? WebReactiveFeign.builder(builder, webClientCustomizer)
-					: WebReactiveFeign.builder(builder);
-		}
-	}
-
-	@Configuration
-	@AutoConfigureAfter(ReactiveFeignWebConfiguration.class)
+	@AutoConfigureAfter(ReactiveFeignConfiguration.class)
 	@ConditionalOnClass({HystrixCommand.class, LoadBalancerCommand.class, CloudReactiveFeign.class})
 	@ConditionalOnProperty(name = "reactive.feign.cloud.enabled", havingValue = "true", matchIfMissing = true)
 	protected static class ReactiveFeignCloudConfiguration {

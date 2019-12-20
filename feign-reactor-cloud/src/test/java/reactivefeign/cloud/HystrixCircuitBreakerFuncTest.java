@@ -1,14 +1,15 @@
 package reactivefeign.cloud;
 
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import feign.RequestLine;
-import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.test.context.junit4.SpringRunner;
 import reactor.core.publisher.Mono;
 
@@ -27,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "hystrix.command.default.circuitBreaker.enabled=false",
                 "hystrix.command.default.execution.timeout.enabled=false"
         })
-@AutoConfigureWireMock(port = 8081)
 @EnableAutoConfiguration
 public class HystrixCircuitBreakerFuncTest {
     private static final String TEST_URL = "/call";
@@ -35,16 +35,13 @@ public class HystrixCircuitBreakerFuncTest {
     private static final String CIRCUIT_IS_OPEN = "short-circuited";
     private static final String NO_FALLBACK = "and no fallback available";
 
-    @Value("${wiremock.server.port}")
-    private int WIREMOCK_PORT;
+    @Rule
+    public WireMockClassRule wireMockRule = new WireMockClassRule(
+            WireMockConfiguration.wireMockConfig()
+                    .dynamicPort());
+
     @Value("${hystrix.command.default.circuitBreaker.requestVolumeThreshold}")
     private int HYSTRIX_VOLUME_THRESHOLD;
-
-    @After
-    public void tearDown() {
-        reset();
-    }
-
 
     @Test
     public void shouldReturnFallbackWithClosedCircuitAfterThreshold() {
@@ -54,7 +51,7 @@ public class HystrixCircuitBreakerFuncTest {
         TestCaller testCaller = BuilderUtils.<TestCaller>cloudBuilderWithExecutionTimeoutDisabled(
                 "shouldReturnFallbackWithClosedCircuitAfterThreshold")
                 .fallback(() -> Mono.just(FALLBACK))
-                .target(TestCaller.class, "http://localhost:" + WIREMOCK_PORT);
+                .target(TestCaller.class, "http://localhost:" + wireMockRule.port());
 
         //check that circuit breaker DOESN'T open on volume threshold
         List<Object> results = IntStream.range(0, callsNo)
@@ -65,7 +62,7 @@ public class HystrixCircuitBreakerFuncTest {
         assertThat(results).containsOnly(FALLBACK);
 
         // assert circuit wasn't open, so all requests went to server
-        verify(exactly(callsNo), getRequestedFor(urlEqualTo(TEST_URL)));
+        wireMockRule.verify(callsNo, getRequestedFor(urlEqualTo(TEST_URL)));
     }
 
     @Test
@@ -75,7 +72,7 @@ public class HystrixCircuitBreakerFuncTest {
 
         TestCaller testCaller = BuilderUtils.<TestCaller>cloudBuilderWithExecutionTimeoutDisabled(
                 "shouldNotOpenCircuitAfterThreshold")
-                .target(TestCaller.class, "http://localhost:" + WIREMOCK_PORT);
+                .target(TestCaller.class, "http://localhost:" + wireMockRule.port());
 
         //check that circuit breaker DOESN'T open on volume threshold
         List<Object> results = IntStream.range(0, callsNo).mapToObj(i -> {
