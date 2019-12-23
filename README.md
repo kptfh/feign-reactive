@@ -139,6 +139,30 @@ Flowable<Flavor> flavors = icecreamApi.getAvailableFlavors();
 Observable<Mixin> mixins = icecreamApi.getAvailableMixins();
 ```
 
+## Header to request
+
+There are 2 options:
+
+### ReactiveHttpRequestInterceptor
+
+``` java
+ReactiveFeignBuilder
+    .addRequestInterceptor(request -> Mono
+            .subscriberContext()
+            .map(ctx -> ctx
+                    .<String>getOrEmpty("authToken")
+                    .map(authToken -> {
+                        Map<String, List<String>> headers = new LinkedHashMap<>(request.headers());
+                        headers.put("Authorization", List.of(authToken));
+                        return new ReactiveHttpRequest(request.method(), request.uri(), headers, request.body());
+                    })
+                    .orElse(request));)
+```    
+
+### @RequestHeader parameter
+You can use `@RequestHeader` annotation for specific parameter to pass one header or map of headers
+[@RequestHeader example](https://github.com/Playtika/feign-reactive/blob/develop/feign-reactor-test/feign-reactor-spring-mvc-test/src/test/java/reactivefeign/spring/mvc/allfeatures/AllFeaturesMvc.java#L64)
+
 ## Spring Auto-Configuration
 
 You can enable auto-configuration of reactive Feign clients as Sring beans just by adding `feign-reactor-spring-configuration` module to classpath. 
