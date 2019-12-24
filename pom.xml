@@ -100,7 +100,7 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-reactive-httpclient</artifactId>
-                <version>1.1.0</version>
+                <version>1.1.1</version>
             </dependency>
 
             <!--TODO temporarily while not included in spring-boot-dependencies-->
