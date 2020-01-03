@@ -13,9 +13,21 @@
  */
 package reactivefeign.webclient;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+
+import org.junit.Test;
 import org.springframework.core.codec.DecodingException;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import feign.FeignException;
 import reactivefeign.ReactiveFeign;
 import reactivefeign.testcase.IcecreamServiceApi;
+import reactivefeign.testcase.domain.IceCreamOrder;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.function.Predicate;
 
@@ -33,5 +45,30 @@ public class SmokeTest extends reactivefeign.SmokeTest {
   protected Predicate<Throwable> corruptedJsonError() {
     return throwable -> throwable instanceof DecodingException;
   }
+  
+  @Test
+  public void shouldDecodeResponseBodyWhenNoCodecsAvailable() {
 
+    String targetUrl = "http://localhost:" + wireMockPort();
+
+    WebClient.Builder wc = WebClient
+            .builder()
+            .exchangeStrategies(ExchangeStrategies.empty().build());
+
+    WebReactiveFeign.Builder<IcecreamServiceApi> bd = WebReactiveFeign
+            .builder(wc);
+
+    IcecreamServiceApi client = bd.target(IcecreamServiceApi.class, targetUrl);
+
+    wireMockRule.stubFor(get(urlEqualTo("/icecream/orders/1"))
+            .willReturn(aResponse().withStatus(400)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"corrupted ! json")));
+
+    Mono<IceCreamOrder> order = client.findOrder(1);
+
+    StepVerifier.create(order)
+            .expectError(FeignException.class)
+            .verify();
+  }
 }
