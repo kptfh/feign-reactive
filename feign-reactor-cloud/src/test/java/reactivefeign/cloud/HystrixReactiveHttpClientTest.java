@@ -6,7 +6,6 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +25,7 @@ import java.util.stream.IntStream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static javax.management.timer.Timer.ONE_SECOND;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -155,8 +155,8 @@ public class HystrixReactiveHttpClientTest {
 
 
         //wait to get opened
-        Awaitility.waitAtMost(Duration.ONE_SECOND)
-                .pollDelay(new Duration(UPDATE_INTERVAL, TimeUnit.MILLISECONDS))
+        Awaitility.waitAtMost(ONE_SECOND, TimeUnit.MILLISECONDS)
+                  .pollDelay(UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
                 .until(() -> HystrixCircuitBreaker.Factory.getInstance(lastCommandKey.get()).isOpen());
 
         Throwable throwableCircuitOpened = client.getMono()
