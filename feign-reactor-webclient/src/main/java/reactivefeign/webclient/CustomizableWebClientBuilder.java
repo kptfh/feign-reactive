@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.http.codec.ClientCodecConfigurer;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
@@ -48,6 +49,8 @@ public class CustomizableWebClientBuilder implements WebClient.Builder {
     private ClientHttpConnector connector;
     private Consumer<WebClient.Builder> builderConsumer;
     private List<ExchangeFilterFunction> filters = new ArrayList<>();
+    private Consumer<ClientCodecConfigurer> consumer;
+    private Consumer<ExchangeStrategies.Builder> exchangeStrategies;
 
     private WebReactiveOptions webOptions = DEFAULT_OPTIONS;
 
@@ -158,9 +161,29 @@ public class CustomizableWebClientBuilder implements WebClient.Builder {
     }
 
     @Override
+    public WebClient.Builder codecs(Consumer<ClientCodecConfigurer> consumer) {
+        if (this.consumer == null) {
+            this.consumer = consumer;
+        } else {
+            logger.warn("Will ignore consumer parameter as it's already been set");
+        }
+        return this;
+    }
+
+    @Override
     public WebClient.Builder exchangeStrategies(ExchangeStrategies strategies) {
         if(this.strategies == null){
             this.strategies = strategies;
+        } else {
+            logger.warn("Will ignore strategies parameter as it's already been set");
+        }
+        return this;
+    }
+
+    @Override
+    public WebClient.Builder exchangeStrategies(Consumer<ExchangeStrategies.Builder> exchangeStrategies) {
+        if (this.exchangeStrategies == null) {
+            this.exchangeStrategies = exchangeStrategies;
         } else {
             logger.warn("Will ignore strategies parameter as it's already been set");
         }
