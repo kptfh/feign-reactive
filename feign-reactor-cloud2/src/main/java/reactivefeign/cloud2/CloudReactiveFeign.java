@@ -10,8 +10,9 @@ import org.springframework.cloud.client.loadbalancer.reactive.ReactiveLoadBalanc
 import reactivefeign.FallbackFactory;
 import reactivefeign.ReactiveFeignBuilder;
 import reactivefeign.ReactiveOptions;
+import reactivefeign.client.ReactiveHttpExchangeFilterFunction;
 import reactivefeign.client.ReactiveHttpRequestInterceptor;
-import reactivefeign.client.ReactiveHttpResponse;
+import reactivefeign.client.ReactiveHttpResponseMapper;
 import reactivefeign.client.log.ReactiveLoggerListener;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.cloud2.methodhandler.CircuitBreakerMethodHandlerFactory;
@@ -21,7 +22,6 @@ import reactivefeign.publisher.PublisherClientFactory;
 import reactivefeign.publisher.PublisherHttpClient;
 import reactivefeign.retry.ReactiveRetryPolicy;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static reactivefeign.ReactiveFeign.Builder.retry;
@@ -97,6 +97,12 @@ public class CloudReactiveFeign {
         }
 
         @Override
+        public ReactiveFeignBuilder<T> addExchangeFilterFunction(ReactiveHttpExchangeFilterFunction exchangeFilterFunction) {
+            builder = builder.addExchangeFilterFunction(exchangeFilterFunction);
+            return this;
+        }
+
+        @Override
         public Builder<T> options(ReactiveOptions options) {
             builder = builder.options(options);
             return this;
@@ -127,7 +133,7 @@ public class CloudReactiveFeign {
         }
 
         @Override
-        public Builder<T> responseMapper(BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> responseMapper) {
+        public Builder<T> responseMapper(ReactiveHttpResponseMapper responseMapper) {
             builder =  builder.responseMapper(responseMapper);
             return this;
         }

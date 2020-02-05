@@ -29,13 +29,13 @@ public class Rx2MethodHandler implements MethodHandler {
 		try {
 			Publisher<Object> publisher = (Publisher<Object>)methodHandler.invoke(argv);
 			if(returnPublisherType == Flowable.class){
-				return fluxToFlowable((Flux<Object>) publisher);
+				return fluxToFlowable(Flux.from(publisher));
 			} else if(returnPublisherType == Observable.class){
-				return fluxToObservable((Flux<Object>) publisher);
+				return fluxToObservable(Flux.from(publisher));
 			} else if(returnPublisherType == Single.class){
-				return monoToSingle((Mono<Object>) publisher);
+				return monoToSingle(Mono.from(publisher));
 			} else if(returnPublisherType == Maybe.class){
-				return monoToMaybe((Mono<Object>) publisher);
+				return monoToMaybe(Mono.from(publisher));
 			} else {
 				throw new IllegalArgumentException("Unexpected returnPublisherType="+returnPublisherType.getClass());
 			}

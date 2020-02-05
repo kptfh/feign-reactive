@@ -3,10 +3,10 @@ package reactivefeign;
 import feign.Contract;
 import feign.FeignException;
 import feign.InvocationHandlerFactory;
-import feign.MethodMetadata;
 import feign.Target;
+import reactivefeign.client.ReactiveHttpExchangeFilterFunction;
 import reactivefeign.client.ReactiveHttpRequestInterceptor;
-import reactivefeign.client.ReactiveHttpResponse;
+import reactivefeign.client.ReactiveHttpResponseMapper;
 import reactivefeign.client.log.ReactiveLoggerListener;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
 import reactivefeign.methodhandler.MethodHandlerFactory;
@@ -14,8 +14,6 @@ import reactivefeign.publisher.PublisherClientFactory;
 import reactivefeign.retry.ReactiveRetryPolicy;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.function.BiFunction;
 
 public interface ReactiveFeignBuilder<T> {
 
@@ -26,6 +24,13 @@ public interface ReactiveFeignBuilder<T> {
      * @return this builder
      */
     ReactiveFeignBuilder<T> contract(final Contract contract);
+
+    /**
+     * Set exchangeFilterFunction that may modify request before being called and response
+     * @param exchangeFilterFunction
+     * @return
+     */
+    ReactiveFeignBuilder<T> addExchangeFilterFunction(ReactiveHttpExchangeFilterFunction exchangeFilterFunction);
 
     /**
      * Set request interceptor that may modify request before being called
@@ -68,7 +73,7 @@ public interface ReactiveFeignBuilder<T> {
      * @param responseMapper
      * @return
      */
-    ReactiveFeignBuilder<T> responseMapper(BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> responseMapper);
+    ReactiveFeignBuilder<T> responseMapper(ReactiveHttpResponseMapper responseMapper);
 
     ReactiveFeignBuilder<T> retryWhen(ReactiveRetryPolicy retryPolicy);
 

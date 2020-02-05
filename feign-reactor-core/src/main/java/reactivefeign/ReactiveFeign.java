@@ -13,16 +13,9 @@
  */
 package reactivefeign;
 
-import feign.Contract;
-import feign.Feign;
-import feign.InvocationHandlerFactory;
-import feign.MethodMetadata;
-import feign.Target;
+import feign.*;
 import org.reactivestreams.Publisher;
-import reactivefeign.client.ReactiveHttpClient;
-import reactivefeign.client.ReactiveHttpClientFactory;
-import reactivefeign.client.ReactiveHttpRequestInterceptor;
-import reactivefeign.client.ReactiveHttpResponse;
+import reactivefeign.client.*;
 import reactivefeign.client.log.DefaultReactiveLogger;
 import reactivefeign.client.log.ReactiveLoggerListener;
 import reactivefeign.client.statushandler.ReactiveStatusHandler;
@@ -47,24 +40,17 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static feign.Util.checkNotNull;
 import static feign.Util.isDefault;
-import static reactivefeign.client.InterceptorReactiveHttpClient.intercept;
-import static reactivefeign.client.ReactiveHttpRequestInterceptors.composite;
-import static reactivefeign.client.ResponseMappers.ignore404;
-import static reactivefeign.client.ResponseMappers.mapResponse;
-import static reactivefeign.client.StatusHandlerReactiveHttpClient.handleStatus;
-import static reactivefeign.client.log.LoggerReactiveHttpClient.log;
+import static reactivefeign.client.ReactiveHttpExchangeFilterFunction.ofRequestProcessor;
+import static reactivefeign.client.ReactiveHttpExchangeFilterFunction.ofResponseProcessor;
+import static reactivefeign.client.StatusHandlerPostProcessor.handleStatus;
+import static reactivefeign.client.log.LoggerExchangeFilterFunction.log;
 import static reactivefeign.utils.FeignUtils.returnPublisherType;
 
 /**
@@ -151,10 +137,9 @@ public class ReactiveFeign {
   public abstract static class Builder<T> implements ReactiveFeignBuilder<T>{
     protected Contract contract;
     protected ReactiveHttpClientFactory clientFactory;
-    protected List<ReactiveHttpRequestInterceptor> requestInterceptors = new ArrayList<>();
-    protected BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> responseMapper;
+    protected List<ReactiveHttpExchangeFilterFunction> exchangeFilterFunctions = new ArrayList<>();
     protected ReactiveStatusHandler statusHandler = ReactiveStatusHandlers.defaultFeignErrorDecoder();
-    protected List<ReactiveLoggerListener> loggerListeners = new ArrayList<>();
+    protected List<ReactiveLoggerListener<Object>> loggerListeners = new ArrayList<>();
     protected InvocationHandlerFactory invocationHandlerFactory =
             new ReactiveInvocationHandler.Factory();
     protected boolean decode404 = false;
@@ -180,7 +165,7 @@ public class ReactiveFeign {
 
     @Override
     public Builder<T> addRequestInterceptor(ReactiveHttpRequestInterceptor requestInterceptor) {
-      this.requestInterceptors.add(requestInterceptor);
+      this.exchangeFilterFunctions.add(ofRequestProcessor(requestInterceptor));
       return this;
     }
 
@@ -197,14 +182,20 @@ public class ReactiveFeign {
     }
 
     @Override
+    public ReactiveFeignBuilder<T> addExchangeFilterFunction(ReactiveHttpExchangeFilterFunction exchangeFilterFunction){
+      this.exchangeFilterFunctions.add(exchangeFilterFunction);
+      return this;
+    }
+
+    @Override
     public Builder<T> statusHandler(ReactiveStatusHandler statusHandler) {
       this.statusHandler = statusHandler;
       return this;
     }
 
     @Override
-    public Builder<T> responseMapper(BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> responseMapper) {
-      this.responseMapper = responseMapper;
+    public Builder<T> responseMapper(ReactiveHttpResponseMapper responseMapper) {
+      this.exchangeFilterFunctions.add(ofResponseProcessor(responseMapper));
       return this;
     }
 
@@ -254,24 +245,24 @@ public class ReactiveFeign {
 
           ReactiveHttpClient reactiveClient = clientFactory.create(methodMetadata);
 
-          if (!requestInterceptors.isEmpty()) {
-            reactiveClient = intercept(reactiveClient, composite(requestInterceptors));
+          List<ReactiveHttpExchangeFilterFunction> exchangeFilterFunctionsAll = new ArrayList(exchangeFilterFunctions);
+
+          if(decode404){
+            exchangeFilterFunctionsAll.add(ofResponseProcessor(ResponseMappers.ignore404()));
           }
 
-          for(ReactiveLoggerListener loggerListener : loggerListeners){
-            reactiveClient = log(reactiveClient, methodMetadata, target, loggerListener);
+          if(statusHandler != null) {
+            exchangeFilterFunctionsAll.add(ofResponseProcessor(handleStatus(statusHandler)));
           }
 
-          if (responseMapper != null) {
-            reactiveClient = mapResponse(reactiveClient, methodMetadata, responseMapper);
+          for(ReactiveLoggerListener<Object> loggerListener : loggerListeners){
+            exchangeFilterFunctionsAll.add(log(methodMetadata, target, loggerListener));
           }
 
-          if (decode404) {
-            reactiveClient = mapResponse(reactiveClient, methodMetadata, ignore404());
-          }
-
-          if (statusHandler != null) {
-            reactiveClient = handleStatus(reactiveClient, methodMetadata, statusHandler);
+          Optional<ReactiveHttpExchangeFilterFunction> exchangeFilterFunction = exchangeFilterFunctionsAll.stream()
+                  .reduce(ReactiveHttpExchangeFilterFunction::then);
+          if(exchangeFilterFunction.isPresent()){
+            reactiveClient = exchangeFilterFunction.get().filter(reactiveClient);
           }
 
           reactivefeign.publisher.PublisherHttpClient publisherClient = toPublisher(reactiveClient, methodMetadata);

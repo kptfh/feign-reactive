@@ -32,19 +32,18 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import reactivefeign.ReactiveOptions;
-import reactivefeign.client.ReactiveHttpRequest;
 import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.client.ReadTimeoutException;
 import reactivefeign.webclient.WebReactiveOptions;
 import reactor.core.publisher.Mono;
-
-import java.util.Collections;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static reactivefeign.spring.config.AutoConfigurationTest.MOCK_SERVER_PORT_PROPERTY;
+import static reactivefeign.spring.config.ReactiveFeignClientUsingPropertiesTests.BarRequestInterceptor;
+import static reactivefeign.spring.config.ReactiveFeignClientUsingPropertiesTests.FooRequestInterceptor;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = ReactiveFeignClientUsingConfigurationsTests.Application.class, webEnvironment = WebEnvironment.NONE)
@@ -104,22 +103,6 @@ public class ReactiveFeignClientUsingConfigurationsTests {
 
 		@RequestMapping(method = RequestMethod.GET, value = "/bar")
 		Mono<String> bar();
-	}
-
-	public static class FooRequestInterceptor implements ReactiveHttpRequestInterceptor {
-		@Override
-		public ReactiveHttpRequest apply(ReactiveHttpRequest reactiveHttpRequest) {
-			reactiveHttpRequest.headers().put("Foo", Collections.singletonList("Foo"));
-			return reactiveHttpRequest;
-		}
-	}
-
-	public static class BarRequestInterceptor implements ReactiveHttpRequestInterceptor {
-		@Override
-		public ReactiveHttpRequest apply(ReactiveHttpRequest reactiveHttpRequest) {
-			reactiveHttpRequest.headers().put("Bar", Collections.singletonList("Bar"));
-			return reactiveHttpRequest;
-		}
 	}
 
 	@Configuration

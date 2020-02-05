@@ -25,14 +25,7 @@ import reactivefeign.utils.Pair;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -101,10 +94,7 @@ public class PublisherClientMethodHandler implements MethodHandler {
     @Override
     @SuppressWarnings("unchecked")
     public Publisher<?> invoke(final Object[] argv) {
-
-        final ReactiveHttpRequest request = buildRequest(argv);
-
-        return publisherClient.executeRequest(request);
+        return publisherClient.executeRequest(buildRequest(argv));
     }
 
     protected ReactiveHttpRequest buildRequest(Object[] argv) {
@@ -115,7 +105,7 @@ public class PublisherClientMethodHandler implements MethodHandler {
 
         Map<String, List<String>> headers = headers(argv, substitutionsMap);
 
-        return new ReactiveHttpRequest(methodMetadata.template().method(), uri, headers, body(argv));
+        return new ReactiveHttpRequest(methodMetadata, target, uri, headers, body(argv));
     }
 
     private URI buildUri(Object[] argv, Map<String, ?> substitutionsMap) {

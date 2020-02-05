@@ -16,10 +16,7 @@ package reactivefeign.client.log;
 import feign.MethodMetadata;
 import feign.Target;
 import org.reactivestreams.Publisher;
-import reactivefeign.client.DelegatingReactiveHttpResponse;
-import reactivefeign.client.ReactiveHttpClient;
-import reactivefeign.client.ReactiveHttpRequest;
-import reactivefeign.client.ReactiveHttpResponse;
+import reactivefeign.client.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -28,7 +25,6 @@ import java.util.function.Consumer;
 
 import static reactivefeign.utils.FeignUtils.requestWithBody;
 import static reactivefeign.utils.FeignUtils.responseWithBody;
-import static reactor.core.publisher.Mono.just;
 
 /**
  * Wraps {@link ReactiveHttpClient} with log logic
@@ -36,23 +32,22 @@ import static reactor.core.publisher.Mono.just;
  *
  * @author Sergii Karpenko
  */
-public class LoggerReactiveHttpClient implements ReactiveHttpClient {
+public class LoggerExchangeFilterFunction implements ReactiveHttpExchangeFilterFunction {
 
-  private final ReactiveHttpClient reactiveClient;
   private final MethodMetadata methodMetadata;
   private Target target;
   private final ReactiveLoggerListener<Object> loggerListener;
   private final boolean requestWithBody;
   private final boolean responseWithBody;
 
-  public static ReactiveHttpClient log(ReactiveHttpClient reactiveClient, MethodMetadata methodMetadata, Target target,
-                                       ReactiveLoggerListener<Object> loggerListener) {
-    return new LoggerReactiveHttpClient(reactiveClient, methodMetadata, target, loggerListener);
+  public static ReactiveHttpExchangeFilterFunction log(
+          MethodMetadata methodMetadata, Target target,
+          ReactiveLoggerListener<Object> loggerListener) {
+    return new LoggerExchangeFilterFunction(methodMetadata, target, loggerListener);
   }
 
-  private LoggerReactiveHttpClient(ReactiveHttpClient reactiveClient, MethodMetadata methodMetadata, Target target,
-                                   ReactiveLoggerListener<Object> loggerListener) {
-    this.reactiveClient = reactiveClient;
+  private LoggerExchangeFilterFunction(MethodMetadata methodMetadata, Target target,
+                                       ReactiveLoggerListener<Object> loggerListener) {
     this.methodMetadata = methodMetadata;
     this.target = target;
     this.loggerListener = loggerListener;
@@ -61,22 +56,18 @@ public class LoggerReactiveHttpClient implements ReactiveHttpClient {
   }
 
   @Override
-  public Mono<ReactiveHttpResponse> executeRequest(ReactiveHttpRequest request) {
-
+  public Mono<ReactiveHttpResponse> filter(ReactiveHttpRequest request, ReactiveHttpClient exchangeFunction) {
     AtomicReference<Object> logContext = new AtomicReference<>();
-    return Mono.defer(() -> {
-      logContext.set(loggerListener.requestStarted(request, target, methodMetadata));
-      return just(request);
-    })
-            .flatMap(req -> {
-              if(loggerListener.logRequestBody()){
-                req = logRequestBody(req, logContext.get());
-              }
 
-              return reactiveClient.executeRequest(req)
-                      .doOnNext(resp -> loggerListener.responseReceived(resp, logContext.get()))
-                      .doOnError(throwable -> loggerListener.errorReceived(throwable, logContext.get()));
-            })
+    logContext.set(loggerListener.requestStarted(request, target, methodMetadata));
+
+    if(loggerListener.logRequestBody()){
+      request = logRequestBody(request, logContext.get());
+    }
+
+    return exchangeFunction.executeRequest(request)
+            .doOnNext(resp -> loggerListener.responseReceived(resp, logContext.get()))
+            .doOnError(throwable -> loggerListener.errorReceived(throwable, logContext.get()))
             .map(resp -> {
               if(loggerListener.logResponseBody()){
                 return logResponseBody(resp, logContext.get());

@@ -57,7 +57,6 @@ public class ReactiveFeignClientUsingPropertiesTests {
 	@Autowired
 	private BarClient barClient;
 
-
 	@BeforeClass
 	public static void setupStubs() {
 
@@ -104,17 +103,17 @@ public class ReactiveFeignClientUsingPropertiesTests {
 
 	public static class FooRequestInterceptor implements ReactiveHttpRequestInterceptor {
 		@Override
-		public ReactiveHttpRequest apply(ReactiveHttpRequest reactiveHttpRequest) {
-			reactiveHttpRequest.headers().put("Foo", Collections.singletonList("Foo"));
-			return reactiveHttpRequest;
+		public Mono<ReactiveHttpRequest> apply(ReactiveHttpRequest request) {
+			request.headers().put("Foo", Collections.singletonList("Foo"));
+			return Mono.just(request);
 		}
 	}
 
 	public static class BarRequestInterceptor implements ReactiveHttpRequestInterceptor {
 		@Override
-		public ReactiveHttpRequest apply(ReactiveHttpRequest reactiveHttpRequest) {
-			reactiveHttpRequest.headers().put("Bar", Collections.singletonList("Bar"));
-			return reactiveHttpRequest;
+		public Mono<ReactiveHttpRequest> apply(ReactiveHttpRequest request) {
+			request.headers().put("Bar", Collections.singletonList("Bar"));
+			return Mono.just(request);
 		}
 	}
 

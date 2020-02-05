@@ -30,8 +30,7 @@ public class LoadBalancerPublisherClient implements PublisherHttpClient {
         return Mono.from(reactiveLoadBalancer.choose())
                 .flatMapMany(serviceInstanceResponse -> {
                     URI lbUrl = reconstructURI(serviceInstanceResponse.getServer(), request.uri());
-                    ReactiveHttpRequest lbRequest = new ReactiveHttpRequest(
-                            request.method(), lbUrl, request.headers(), request.body());
+                    ReactiveHttpRequest lbRequest = new ReactiveHttpRequest(request, lbUrl);
                     return publisherClient.executeRequest(lbRequest);
                 });
     }

@@ -13,6 +13,8 @@
  */
 package reactivefeign.client;
 
+import reactor.core.publisher.Mono;
+
 import java.util.function.Function;
 
 /**
@@ -22,5 +24,5 @@ import java.util.function.Function;
  *
  */
 public interface ReactiveHttpRequestInterceptor
-    extends Function<ReactiveHttpRequest, ReactiveHttpRequest> {
+    extends Function<ReactiveHttpRequest, Mono<ReactiveHttpRequest>> {
 }

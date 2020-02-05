@@ -65,6 +65,6 @@ public class RibbonPublisherClient implements PublisherHttpClient {
                 .host(server.getHost())
                 .port(server.getPort())
                 .build(true).toUri();
-        return new ReactiveHttpRequest(request.method(), lbUrl, request.headers(), request.body());
+        return new ReactiveHttpRequest(request, lbUrl);
     }
 }

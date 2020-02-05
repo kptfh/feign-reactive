@@ -1,9 +1,11 @@
 package reactivefeign.client;
 
 import reactivefeign.utils.Pair;
+import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import static reactivefeign.utils.MultiValueMapUtils.addOrdered;
 
@@ -16,20 +18,13 @@ public final class ReactiveHttpRequestInterceptors {
     }
 
     public static ReactiveHttpRequestInterceptor addHeaders(List<Pair<String, String>> headers){
-        return request -> {
+        return from(request -> {
             headers.forEach(header -> addOrdered(request.headers(), header.left, header.right));
             return request;
-        };
+        });
     }
 
-    public static ReactiveHttpRequestInterceptor composite(List<ReactiveHttpRequestInterceptor> interceptors){
-        return request -> {
-            ReactiveHttpRequest result = request;
-            for(ReactiveHttpRequestInterceptor interceptor : interceptors){
-                result = interceptor.apply(result);
-            }
-            return result;
-        };
+    public static ReactiveHttpRequestInterceptor from(Function<ReactiveHttpRequest, ReactiveHttpRequest> function){
+        return request -> Mono.just(function.apply(request));
     }
-
 }

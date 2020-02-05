@@ -13,6 +13,8 @@
  */
 package reactivefeign.client;
 
+import feign.MethodMetadata;
+import feign.Target;
 import org.reactivestreams.Publisher;
 
 import java.net.URI;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static feign.Util.checkNotNull;
+import static reactivefeign.utils.FeignUtils.methodTag;
 
 /**
  * An immutable reactive request to an http server.
@@ -28,7 +31,8 @@ import static feign.Util.checkNotNull;
  */
 public final class ReactiveHttpRequest {
 
-  private final String method;
+  private final MethodMetadata methodMetadata;
+  private final Target target;
   private final URI uri;
   private final Map<String, List<String>> headers;
   private final Publisher<Object> body;
@@ -37,22 +41,29 @@ public final class ReactiveHttpRequest {
    * No parameters can be null except {@code body}. All parameters must be effectively immutable,
    * via safe copies, not mutating or otherwise.
    */
-  public ReactiveHttpRequest(String method, URI uri,
-      Map<String, List<String>> headers, Publisher<Object> body) {
-    this.method = checkNotNull(method, "method of %s", uri);
+  public ReactiveHttpRequest(MethodMetadata methodMetadata, Target target,
+                             URI uri, Map<String, List<String>> headers, Publisher<Object> body) {
+    this.methodMetadata = checkNotNull(methodMetadata, "method of %s", uri);
+    this.target = checkNotNull(target, "target of %s", uri);
     this.uri = checkNotNull(uri, "url");
-    this.headers = checkNotNull(headers, "headers of %s %s", method, uri);
+    this.headers = checkNotNull(headers, "headers of %s %s", methodMetadata, uri);
     this.body = body; // nullable
   }
 
+  public ReactiveHttpRequest(ReactiveHttpRequest request, URI uri) {
+    this(request.methodMetadata, request.target, uri, request.headers, request.body);
+  }
+
   public ReactiveHttpRequest(ReactiveHttpRequest request, Publisher<Object> body){
-     this(request.method, request.uri, request.headers, body);
+     this(request.methodMetadata, request.target, request.uri, request.headers, body);
   }
 
   /* Method to invoke on the server. */
   public String method() {
-    return method;
+    return methodMetadata.template().method();
   }
+
+
 
   /* Fully resolved URL including query. */
   public URI uri() {
@@ -69,6 +80,10 @@ public final class ReactiveHttpRequest {
    */
   public Publisher<Object> body() {
     return body;
+  }
+
+  public String methodKey(){
+    return methodTag(methodMetadata);
   }
 
 }

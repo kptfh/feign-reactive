@@ -13,12 +13,9 @@
  */
 package reactivefeign.client;
 
-import feign.MethodMetadata;
 import org.reactivestreams.Publisher;
 import reactivefeign.utils.HttpStatus;
 import reactor.core.publisher.Mono;
-
-import java.util.function.BiFunction;
 
 /**
  * Maps 404 error response to successful empty response
@@ -27,10 +24,10 @@ import java.util.function.BiFunction;
  */
 public class ResponseMappers {
 
-  public static BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> ignore404() {
-    return (MethodMetadata methodMetadata, ReactiveHttpResponse response) -> {
+  public static ReactiveHttpResponseMapper ignore404() {
+    return response -> {
       if (response.status() == HttpStatus.SC_NOT_FOUND) {
-        return new DelegatingReactiveHttpResponse(response) {
+        return Mono.just(new DelegatingReactiveHttpResponse(response) {
           @Override
           public int status() {
             return HttpStatus.SC_OK;
@@ -40,18 +37,10 @@ public class ResponseMappers {
           public Publisher<Object> body() {
             return Mono.empty();
           }
-        };
+        });
       }
-      return response;
+      return Mono.just(response);
     };
-  }
-
-  public static ReactiveHttpClient mapResponse(
-          ReactiveHttpClient reactiveHttpClient,
-          MethodMetadata methodMetadata,
-          BiFunction<MethodMetadata, ReactiveHttpResponse, ReactiveHttpResponse> responseMapper) {
-    return request -> reactiveHttpClient.executeRequest(request)
-        .map(response -> responseMapper.apply(methodMetadata, response));
   }
 
 }

@@ -55,9 +55,9 @@ abstract public class ResponseMapperTest {
 
     IcecreamServiceApi clientWithoutAuth = builder()
         .statusHandler(null)
-        .responseMapper((methodMetadata, response) -> {
+        .responseMapper(response -> {
           if(response.status() == HttpStatus.SC_NOT_IMPLEMENTED){
-            return new DelegatingReactiveHttpResponse(response){
+            return Mono.just(new DelegatingReactiveHttpResponse(response){
               @Override
               public Publisher<?> body() {
                 return getResponse().bodyData().map(bytes -> {
@@ -65,9 +65,9 @@ abstract public class ResponseMapperTest {
                   return new RuntimeException(errorText.substring(12));
                 }).flatMap(Mono::error);
               }
-            };
+            });
           } else {
-            return response;
+            return Mono.just(response);
           }
         })
         .target(IcecreamServiceApi.class, "http://localhost:" + wireMockRule.port());

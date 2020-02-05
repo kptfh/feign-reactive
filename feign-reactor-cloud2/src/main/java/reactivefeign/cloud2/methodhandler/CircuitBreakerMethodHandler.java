@@ -69,7 +69,7 @@ public class CircuitBreakerMethodHandler implements MethodHandler {
         }
     }
 
-    protected BiFunction<Throwable, Object[], Object> buildFallbackFactory(
+    private BiFunction<Throwable, Object[], Object> buildFallbackFactory(
             Function<Throwable, Object> fallbackInstanceFactory, Method method) {
         if(fallbackInstanceFactory == null){
             return null;

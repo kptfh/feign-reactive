@@ -50,6 +50,6 @@ abstract public class DelegatingReactiveHttpResponse implements ReactiveHttpResp
 
   @Override
   public Mono<byte[]> bodyData() {
-    throw new UnsupportedOperationException();
+    return response.bodyData();
   }
 }
