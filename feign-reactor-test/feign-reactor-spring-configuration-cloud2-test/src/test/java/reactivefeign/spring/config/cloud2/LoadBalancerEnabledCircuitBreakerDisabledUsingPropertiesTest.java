@@ -124,7 +124,7 @@ public class LoadBalancerEnabledCircuitBreakerDisabledUsingPropertiesTest {
 
 	}
 
-	@EnableReactiveFeignClients(clients = LoadBalancerEnabledCircuitBreakerDisabledUsingPropertiesTest.TestReactiveFeignClient.class)
+	@EnableReactiveFeignClients(clients = TestReactiveFeignClient.class)
 	@EnableAutoConfiguration
 	@Configuration
 	public static class TestConfiguration{}
