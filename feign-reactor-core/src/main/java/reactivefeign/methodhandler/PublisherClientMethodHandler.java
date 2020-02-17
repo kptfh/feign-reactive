@@ -144,7 +144,7 @@ public class PublisherClientMethodHandler implements MethodHandler {
                 queryBuilder.append(field);
                 queryBuilder.append('=');
                 if (!value.isEmpty()) {
-                    queryBuilder.append(UriUtils.queryEncode(value, UTF_8));
+                    queryBuilder.append(UriUtils.encode(value, UTF_8));
                 }
             }
         }
@@ -287,7 +287,7 @@ public class PublisherClientMethodHandler implements MethodHandler {
             chunks.add(data -> {
                 Object substitution = data.get(substitute);
                 if (substitution != null) {
-                    return UriUtils.pathEncode(substitution.toString(), UTF_8);
+                    return UriUtils.encode(substitution.toString(), UTF_8);
                 } else {
                     throw new IllegalArgumentException("No substitution in url for:"+substitute);
                 }

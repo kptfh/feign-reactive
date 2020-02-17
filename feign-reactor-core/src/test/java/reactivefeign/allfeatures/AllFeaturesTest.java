@@ -402,8 +402,27 @@ abstract public class AllFeaturesTest {
 	}
 
 	@Test
+	public void shouldEncodeQueryParamWithReservedChars() {
+		String QUERY_PARAM_VALUE = "workers?in=(\"123/321\")";
+
+		StepVerifier.create(client.encodeParam(QUERY_PARAM_VALUE))
+				.expectNextMatches(testObject -> testObject.payload.equals(QUERY_PARAM_VALUE))
+				.verifyComplete();
+	}
+
+	@Test
 	public void shouldEncodePathParam() {
 		String PATH_PARAM = "path value with space and Cyrillic Героям Слава";
+
+		StepVerifier.create(client.encodePath(PATH_PARAM))
+				.expectNextMatches(testObject -> testObject.payload.equals(PATH_PARAM))
+				.verifyComplete();
+
+	}
+
+	@Test
+	public void shouldEncodePathParamWithReservedChars() {
+		String PATH_PARAM = "workers?in=(\"123/321\")";
 
 		StepVerifier.create(client.encodePath(PATH_PARAM))
 				.expectNextMatches(testObject -> testObject.payload.equals(PATH_PARAM))
