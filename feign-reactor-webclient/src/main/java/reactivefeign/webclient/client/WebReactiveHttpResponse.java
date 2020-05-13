@@ -62,12 +62,14 @@ class WebReactiveHttpResponse<P extends Publisher<?>> implements ReactiveHttpRes
 	public Mono<byte[]> bodyData() {
 		Flux<DataBuffer> response = clientResponse.body(BodyExtractors.toDataBuffers());
 		return DataBufferUtils.join(response)
-				.map(dataBuffer -> {
-					byte[] result = new byte[dataBuffer.readableByteCount()];
-					dataBuffer.read(result);
-					DataBufferUtils.release(dataBuffer);
-					return result;
-				})
+				.map(WebReactiveHttpResponse::readToByteArray)
 				.defaultIfEmpty(new byte[0]);
+	}
+
+	private static byte[] readToByteArray(DataBuffer dataBuffer) {
+		byte[] result = new byte[dataBuffer.readableByteCount()];
+		dataBuffer.read(result);
+		DataBufferUtils.release(dataBuffer);
+		return result;
 	}
 }
