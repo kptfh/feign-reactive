@@ -1,6 +1,6 @@
 Happy to announce that from now Java Reactive Feign client is officially backed by Playtika. All development will be conducted in Playtika fork https://github.com/Playtika/feign-reactive
 
-[Subscribe to stay up to date](https://www.youtube.com/channel/UCAIRpdkVAj1RT6butHUV9yg)
+[Subscribe to stay up to date 🙂](https://www.youtube.com/channel/UCAIRpdkVAj1RT6butHUV9yg)
 
 # feign-reactive
 
