@@ -152,16 +152,16 @@ There are 2 options:
 
 ``` java
 ReactiveFeignBuilder
+    .addRequestInterceptor(ReactiveHttpRequestInterceptors.addHeader("Cache-Control", "no-cache"))
     .addRequestInterceptor(request -> Mono
             .subscriberContext()
             .map(ctx -> ctx
                     .<String>getOrEmpty("authToken")
                     .map(authToken -> {
-                        Map<String, List<String>> headers = new LinkedHashMap<>(request.headers());
-                        headers.put("Authorization", List.of(authToken));
-                        return new ReactiveHttpRequest(request.method(), request.uri(), headers, request.body());
+                      MultiValueMapUtils.addOrdered(request.headers(), "Authorization", authToken);
+                      return request;
                     })
-                    .orElse(request));)
+                    .orElse(request)));
 ```    
 
 ### @RequestHeader parameter
