@@ -1,5 +1,6 @@
 package reactivefeign.client;
 
+import feign.template.UriUtils;
 import reactivefeign.utils.Pair;
 import reactor.core.publisher.Mono;
 
@@ -9,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static reactivefeign.utils.MultiValueMapUtils.addOrdered;
 
 public final class ReactiveHttpRequestInterceptors {
@@ -30,39 +32,36 @@ public final class ReactiveHttpRequestInterceptors {
     }
 
     public static ReactiveHttpRequestInterceptor addQuery(String name, String value) {
-        return addHeaders(Collections.singletonList(new Pair<>(name, value)));
+        return addQueries(Collections.singletonList(new Pair<>(name, value)));
     }
 
     public static ReactiveHttpRequestInterceptor addQueries(List<Pair<String, String>> queries) {
-        return ReactiveHttpRequestInterceptors.from(reactiveHttpRequest -> {
-            for (Pair<String, String> query : queries) {
-                reactiveHttpRequest = reactiveHttpRequestWithQuery(reactiveHttpRequest, query.left, query.right);
-            }
-            return reactiveHttpRequest;
-        });
+        return ReactiveHttpRequestInterceptors.from(reactiveHttpRequest
+                -> reactiveHttpRequestWithQueries(reactiveHttpRequest, queries));
     }
 
     public static ReactiveHttpRequestInterceptor from(Function<ReactiveHttpRequest, ReactiveHttpRequest> function) {
         return request -> Mono.just(function.apply(request));
     }
 
-    private static ReactiveHttpRequest reactiveHttpRequestWithQuery(ReactiveHttpRequest reactiveHttpRequest, String key, String value) {
+    private static ReactiveHttpRequest reactiveHttpRequestWithQueries(ReactiveHttpRequest reactiveHttpRequest, List<Pair<String, String>> queries) {
         URI uri = reactiveHttpRequest.uri();
         String query = uri.getQuery();
-        String keyValuePair = key + QUERY_KEY_VALUE_SEPARATOR + value;
+        for(Pair<String, String> queryPair : queries) {
+            String keyValuePair = queryPair.left + QUERY_KEY_VALUE_SEPARATOR + UriUtils.encode(queryPair.right, UTF_8);
 
-        if (query == null) {
-            query = keyValuePair;
-        } else {
-            query += QUERY_PAIRS_SEPARATOR + keyValuePair;
+            if (query == null) {
+                query = keyValuePair;
+            } else {
+                query += QUERY_PAIRS_SEPARATOR + keyValuePair;
+            }
         }
 
         try {
             return new ReactiveHttpRequest(reactiveHttpRequest, new URI(uri.getScheme(), uri.getAuthority(),
                     uri.getPath(), query, uri.getFragment()));
         } catch (URISyntaxException e) {
-            // Ignore error with malformed URL, cannot be sent here
-            return reactiveHttpRequest;
+            throw new RuntimeException(e);
         }
     }
 }
