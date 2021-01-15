@@ -43,7 +43,7 @@ abstract public class AbstractPathVariableInTargetUrlTest extends BaseReactorTes
     }
 
     static void mockSuccessMono(WireMockClassRule server, String body) {
-        server.stubFor(get(urlPathMatching("/mono/1/"))
+        server.stubFor(get(urlPathMatching("/mono/1"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

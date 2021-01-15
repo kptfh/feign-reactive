@@ -38,12 +38,16 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import reactivefeign.client.ReactiveHttpRequest;
+import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.cloud.CloudReactiveFeign;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
 import static reactivefeign.spring.config.AutoConfigurationTest.MOCK_SERVER_PORT_PROPERTY;
 
 /**
@@ -54,8 +58,8 @@ import static reactivefeign.spring.config.AutoConfigurationTest.MOCK_SERVER_PORT
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = AutoConfigurationTest.TestConfiguration.class,
-		        webEnvironment = SpringBootTest.WebEnvironment.NONE,
-				properties = "ribbon.listOfServers=localhost:${"+MOCK_SERVER_PORT_PROPERTY+"}")
+		webEnvironment = SpringBootTest.WebEnvironment.NONE,
+		properties = "ribbon.listOfServers=localhost:${"+MOCK_SERVER_PORT_PROPERTY+"}")
 @TestPropertySource("classpath:common.properties")
 @DirtiesContext
 public class AutoConfigurationTest {
@@ -63,7 +67,8 @@ public class AutoConfigurationTest {
 	public static final String MOCK_SERVER_PORT_PROPERTY = "mock.server.port";
 
 	public static final String TEST_FEIGN_CLIENT = "test-feign-client";
-	public static final String TEST_FEIGN_CLIENT_W_PARAM = "test-feign-client-w-param";
+	public static final String TEST_FEIGN_CLIENT_W_PATH_PARAM = "test-feign-client-w-path-param";
+	public static final String TEST_FEIGN_CLIENT_W_QUERY_PARAM = "test-feign-client-w-query-param";
 
 	private static final String TEST_URL = "/testUrl";
 	private static final String BODY_TEXT = "test";
@@ -72,12 +77,16 @@ public class AutoConfigurationTest {
 
 	@Autowired
 	TestReactiveFeignClient feignClient;
-
 	@Autowired
 	TestReactiveFeignClientWithParamInPath feignClientWithParamInPath;
+	@Autowired
+	TestReactiveFeignClientWithParamInQuery feignClientWithParamInQuery;
+
 
 	@Test
-	public void shouldMirrorIntegerStreamBody() {
+	public void shouldAutoconfigureInterceptor() {
+		int counter = RequestInterceptorConfiguration.counter;
+
 		mockHttpServer.stubFor(get(urlPathMatching(TEST_URL))
 				.willReturn(aResponse()
 						.withBody(BODY_TEXT)
@@ -88,25 +97,14 @@ public class AutoConfigurationTest {
 		StepVerifier.create(result)
 				.expectNext(BODY_TEXT)
 				.verifyComplete();
-	}
 
-	@Test
-	public void shouldFailOnDefaultHystrixTimeout() {
-		mockHttpServer.stubFor(get(urlPathMatching(TEST_URL))
-				.willReturn(aResponse()
-						.withFixedDelay(2000)
-						.withBody(BODY_TEXT)
-						.withStatus(200)));
-
-		Mono<String> result = feignClient.testMethod();
-
-		StepVerifier.create(result)
-				.expectError(RuntimeException.class)
-				.verify();
+		assertThat(RequestInterceptorConfiguration.counter).isEqualTo(counter+1);
 	}
 
 	@Test
 	public void shouldUseParameterFromPath() {
+		int counter = RequestInterceptorConfiguration.counter;
+
 		mockHttpServer.stubFor(get(urlPathMatching("/test/1"+TEST_URL))
 				.willReturn(aResponse()
 						.withBody(BODY_TEXT)
@@ -117,6 +115,26 @@ public class AutoConfigurationTest {
 		StepVerifier.create(result)
 				.expectNext(BODY_TEXT)
 				.verifyComplete();
+
+		assertThat(RequestInterceptorConfiguration.counter).isEqualTo(counter);
+	}
+
+	@Test
+	public void shouldUseParameterFromQuery() {
+		int counter = RequestInterceptorConfiguration.counter;
+
+		mockHttpServer.stubFor(get(urlPathMatching("/test"+TEST_URL))
+				.willReturn(aResponse()
+						.withBody(BODY_TEXT)
+						.withStatus(200)));
+
+		Mono<String> result = feignClientWithParamInQuery.testMethod(1);
+
+		StepVerifier.create(result)
+				.expectNext(BODY_TEXT)
+				.verifyComplete();
+
+		assertThat(RequestInterceptorConfiguration.counter).isEqualTo(counter);
 	}
 
 	@BeforeClass
@@ -135,25 +153,53 @@ public class AutoConfigurationTest {
 		mockHttpServer.resetAll();
 	}
 
-	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT)
+	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT,
+			configuration = {
+					RequestInterceptorConfiguration.class,
+					HystrixTimeoutDisabledConfiguration.class})
 	public interface TestReactiveFeignClient {
 		@GetMapping(path = TEST_URL)
 		Mono<String> testMethod();
 	}
 
-	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT_W_PARAM, path = "test/{id}",
+	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT_W_PATH_PARAM, path = "test/{id}",
 			configuration = HystrixTimeoutDisabledConfiguration.class)
 	public interface TestReactiveFeignClientWithParamInPath {
 		@GetMapping(path = TEST_URL)
 		Mono<String> testMethod(@PathVariable("id") long id);
 	}
 
+	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT_W_QUERY_PARAM, path = "/test"+TEST_URL,
+			configuration = HystrixTimeoutDisabledConfiguration.class)
+	public interface TestReactiveFeignClientWithParamInQuery {
+		@GetMapping
+		Mono<String> testMethod(@RequestParam("id") long id);
+	}
+
 	@EnableReactiveFeignClients(clients = {
-			AutoConfigurationTest.TestReactiveFeignClient.class,
-			TestReactiveFeignClientWithParamInPath.class})
+			TestReactiveFeignClient.class,
+			TestReactiveFeignClientWithParamInPath.class,
+			TestReactiveFeignClientWithParamInQuery.class})
 	@EnableAutoConfiguration
 	@Configuration
 	public static class TestConfiguration{}
+
+	@Configuration
+	protected static class RequestInterceptorConfiguration {
+		volatile static int counter;
+		@Bean
+		ReactiveHttpRequestInterceptor reactiveHttpRequestInterceptor(){
+			return new ReactiveHttpRequestInterceptor() {
+				@Override
+				public Mono<ReactiveHttpRequest> apply(ReactiveHttpRequest reactiveHttpRequest) {
+					return Mono.defer(() -> {
+						counter++;
+						return Mono.just(reactiveHttpRequest);
+					});
+				}
+			};
+		}
+	}
 
 	@Configuration
 	protected static class HystrixTimeoutDisabledConfiguration {

@@ -40,6 +40,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.*;
 import static reactivefeign.utils.MultiValueMapUtils.*;
+import static reactivefeign.utils.StringUtils.cutPrefix;
 import static reactivefeign.utils.StringUtils.cutTail;
 
 /**
@@ -281,13 +282,24 @@ public class PublisherClientMethodHandler implements MethodHandler {
 
     private static Function<Substitutions, String> buildUrlExpandFunction(
             RequestTemplate requestTemplate, Target<?> target) {
+        String requestUrl = getRequestUrl(requestTemplate);
+
         if(target instanceof Target.EmptyTarget){
-            return expandUrlForEmptyTarget(buildUrlExpandFunction(
-                    cutTail(requestTemplate.url(), requestTemplate.queryLine())));
+            return expandUrlForEmptyTarget(buildUrlExpandFunction(requestUrl));
         } else {
-            return buildUrlExpandFunction(target.url() +
-                    cutTail(requestTemplate.url(), requestTemplate.queryLine()));
+            String targetUrl = cutTail(target.url(), "/");
+            return buildUrlExpandFunction(targetUrl+requestUrl);
         }
+    }
+
+    private static String getRequestUrl(RequestTemplate requestTemplate) {
+        String requestUrl = cutTail(requestTemplate.url(), requestTemplate.queryLine());
+        requestUrl = cutPrefix(requestUrl, "/");
+        requestUrl = cutTail(requestUrl, "/");
+        if(!requestUrl.isEmpty()){
+            requestUrl = "/"+requestUrl;
+        }
+        return requestUrl;
     }
 
     private static Function<Substitutions, String> expandUrlForEmptyTarget(

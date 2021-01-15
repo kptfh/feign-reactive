@@ -37,6 +37,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import reactivefeign.client.ReactiveHttpRequest;
+import reactivefeign.client.ReactiveHttpRequestInterceptor;
 import reactivefeign.spring.config.EnableReactiveFeignClients;
 import reactivefeign.spring.config.ReactiveFeignCircuitBreakerCustomizer;
 import reactivefeign.spring.config.ReactiveFeignClient;
@@ -47,6 +50,7 @@ import java.time.Duration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
 import static reactivefeign.spring.config.cloud2.AutoConfigurationTest.*;
 
 /**
@@ -60,7 +64,8 @@ import static reactivefeign.spring.config.cloud2.AutoConfigurationTest.*;
 		webEnvironment = SpringBootTest.WebEnvironment.NONE,
 		properties = {
 				"spring.cloud.discovery.client.simple.instances."+ TEST_FEIGN_CLIENT+"[0].uri=http://localhost:${"+ MOCK_SERVER_PORT_PROPERTY+"}",
-				"spring.cloud.discovery.client.simple.instances."+TEST_FEIGN_CLIENT_W_PARAM+"[0].uri=http://localhost:${"+ MOCK_SERVER_PORT_PROPERTY+"}"
+				"spring.cloud.discovery.client.simple.instances."+ TEST_FEIGN_CLIENT_W_PATH_PARAM +"[0].uri=http://localhost:${"+ MOCK_SERVER_PORT_PROPERTY+"}",
+				"spring.cloud.discovery.client.simple.instances."+ TEST_FEIGN_CLIENT_W_QUERY_PARAM +"[0].uri=http://localhost:${"+ MOCK_SERVER_PORT_PROPERTY+"}"
 		})
 @TestPropertySource("classpath:common.properties")
 @DirtiesContext
@@ -69,7 +74,8 @@ public class AutoConfigurationTest {
 	static final String MOCK_SERVER_PORT_PROPERTY = "mock.server.port";
 
 	static final String TEST_FEIGN_CLIENT = "test-feign-client";
-	static final String TEST_FEIGN_CLIENT_W_PARAM = "test-feign-client-w-param";
+	static final String TEST_FEIGN_CLIENT_W_PATH_PARAM = "test-feign-client-w-path-param";
+	static final String TEST_FEIGN_CLIENT_W_QUERY_PARAM = "test-feign-client-w-query-param";
 	private static final String TEST_URL = "/testUrl";
 	private static final String BODY_TEXT = "test";
 
@@ -91,12 +97,15 @@ public class AutoConfigurationTest {
 
 	@Autowired
 	TestReactiveFeignClient feignClient;
-
 	@Autowired
 	TestReactiveFeignClientWithParamInPath feignClientWithParamInPath;
+	@Autowired
+	TestReactiveFeignClientWithParamInQuery feignClientWithParamInQuery;
 
 	@Test
-	public void shouldMirrorIntegerStreamBody() {
+	public void shouldAutoconfigureInterceptor() {
+		int counter = RequestInterceptorConfiguration.counter;
+
 		mockHttpServer.stubFor(get(urlPathMatching(TEST_URL))
 				.willReturn(aResponse()
 						.withBody(BODY_TEXT)
@@ -107,25 +116,14 @@ public class AutoConfigurationTest {
 		StepVerifier.create(result)
 				.expectNext(BODY_TEXT)
 				.verifyComplete();
-	}
 
-	@Test
-	public void shouldFailOnDefaultCircuitBreakerTimeout() {
-		mockHttpServer.stubFor(get(urlPathMatching(TEST_URL))
-				.willReturn(aResponse()
-						.withFixedDelay(2000)
-						.withBody(BODY_TEXT)
-						.withStatus(200)));
-
-		Mono<String> result = feignClient.testMethod();
-
-		StepVerifier.create(result)
-				.expectError(RuntimeException.class)
-				.verify();
+		assertThat(RequestInterceptorConfiguration.counter).isEqualTo(counter+1);
 	}
 
 	@Test
 	public void shouldUseParameterFromPath() {
+		int counter = RequestInterceptorConfiguration.counter;
+
 		mockHttpServer.stubFor(get(urlPathMatching("/test/1"+TEST_URL))
 				.willReturn(aResponse()
 						.withBody(BODY_TEXT)
@@ -136,6 +134,26 @@ public class AutoConfigurationTest {
 		StepVerifier.create(result)
 				.expectNext(BODY_TEXT)
 				.verifyComplete();
+
+		assertThat(RequestInterceptorConfiguration.counter).isEqualTo(counter);
+	}
+
+	@Test
+	public void shouldUseParameterFromQuery() {
+		int counter = RequestInterceptorConfiguration.counter;
+
+		mockHttpServer.stubFor(get(urlPathMatching("/test"+TEST_URL))
+				.willReturn(aResponse()
+						.withBody(BODY_TEXT)
+						.withStatus(200)));
+
+		Mono<String> result = feignClientWithParamInQuery.testMethod(1);
+
+		StepVerifier.create(result)
+				.expectNext(BODY_TEXT)
+				.verifyComplete();
+
+		assertThat(RequestInterceptorConfiguration.counter).isEqualTo(counter);
 	}
 
 	@BeforeClass
@@ -154,13 +172,16 @@ public class AutoConfigurationTest {
 		mockHttpServer.resetAll();
 	}
 
-	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT)
+	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT,
+			configuration = {
+					RequestInterceptorConfiguration.class,
+					CircuitBreakerTimeoutDisabledConfiguration.class,})
 	public interface TestReactiveFeignClient {
 		@GetMapping(path = TEST_URL)
 		Mono<String> testMethod();
 	}
 
-	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT_W_PARAM, path = "test/{id}",
+	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT_W_PATH_PARAM, path = "test/{id}",
 			configuration = CircuitBreakerTimeoutDisabledConfiguration.class)
 	public interface TestReactiveFeignClientWithParamInPath {
 
@@ -168,15 +189,35 @@ public class AutoConfigurationTest {
 		Mono<String> testMethod(@PathVariable("id") long id);
 	}
 
+	@ReactiveFeignClient(name = TEST_FEIGN_CLIENT_W_QUERY_PARAM, path = "/test"+TEST_URL,
+			configuration = CircuitBreakerTimeoutDisabledConfiguration.class)
+	public interface TestReactiveFeignClientWithParamInQuery {
+		@GetMapping
+		Mono<String> testMethod(@RequestParam("id") long id);
+	}
+
 	@EnableReactiveFeignClients(clients = {
 			AutoConfigurationTest.TestReactiveFeignClient.class,
-			TestReactiveFeignClientWithParamInPath.class})
+			TestReactiveFeignClientWithParamInPath.class,
+			TestReactiveFeignClientWithParamInQuery.class})
 	@EnableAutoConfiguration
 	@Configuration
-	public static class TestConfiguration{
+	public static class TestConfiguration{}
+
+	@Configuration
+	protected static class RequestInterceptorConfiguration {
+		volatile static int counter;
 		@Bean
-		public Customizer<ReactiveResilience4JCircuitBreakerFactory> defaultCustomizer() {
-			return SHORT_TIMEOUT_CUSTOMIZER;
+		ReactiveHttpRequestInterceptor reactiveHttpRequestInterceptor(){
+			return new ReactiveHttpRequestInterceptor() {
+				@Override
+				public Mono<ReactiveHttpRequest> apply(ReactiveHttpRequest reactiveHttpRequest) {
+					return Mono.defer(() -> {
+						counter++;
+						return Mono.just(reactiveHttpRequest);
+					});
+				}
+			};
 		}
 	}
 
