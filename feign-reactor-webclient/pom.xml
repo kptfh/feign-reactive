@@ -10,11 +10,12 @@
     </parent>
 
     <artifactId>feign-reactor-webclient</artifactId>
+    <description>WebClient with ReactorClientHttpConnector (Netty) </description>
 
     <dependencies>
         <dependency>
             <groupId>com.playtika.reactivefeign</groupId>
-            <artifactId>feign-reactor-core</artifactId>
+            <artifactId>feign-reactor-webclient-core</artifactId>
         </dependency>
 
         <dependency>
