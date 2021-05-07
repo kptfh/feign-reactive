@@ -1,22 +1,40 @@
-package reactivefeign.cloud.common;
+package reactivefeign.cloud2;
+
 
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import feign.RequestLine;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.timelimiter.TimeLimiterConfig;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
+import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException;
+import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreakerFactory;
+import org.springframework.test.context.junit4.SpringRunner;
 import reactivefeign.BaseReactorTest;
 import reactivefeign.ReactiveFeignBuilder;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
-abstract public class AbstractCircuitBreakerFuncTest extends BaseReactorTest {
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
+        classes = reactivefeign.cloud2.CircuitBreakerFuncTest.class)
+@EnableAutoConfiguration
+public class CircuitBreakerFuncTest extends BaseReactorTest {
 
     protected static final int VOLUME_THRESHOLD = 3;
     private static final String TEST_URL = "/call";
@@ -27,9 +45,12 @@ abstract public class AbstractCircuitBreakerFuncTest extends BaseReactorTest {
             WireMockConfiguration.wireMockConfig()
                     .dynamicPort());
 
-    abstract protected ReactiveFeignBuilder<TestCaller> cloudBuilderWithTimeoutDisabledAndCircuitBreakerDisabled();
+    private static ReactiveCircuitBreakerFactory circuitBreakerFactory;
 
-    abstract protected void assertCircuitBreakerClosed(Throwable throwable);
+    @BeforeClass
+    public static void setupCircuitBreakerFactory() {
+        circuitBreakerFactory = new ReactiveResilience4JCircuitBreakerFactory();
+    }
 
     @Test
     public void shouldReturnFallbackWithClosedCircuitAfterThreshold() {
@@ -88,4 +109,17 @@ abstract public class AbstractCircuitBreakerFuncTest extends BaseReactorTest {
         @RequestLine("GET " + TEST_URL)
         Mono<String> call();
     }
+
+    protected ReactiveFeignBuilder<TestCaller> cloudBuilderWithTimeoutDisabledAndCircuitBreakerDisabled(){
+        return BuilderUtils.cloudBuilderWithUniqueCircuitBreaker(circuitBreakerFactory,
+                configBuilder -> ((Resilience4JConfigBuilder)configBuilder)
+                        .timeLimiterConfig(TimeLimiterConfig.custom().timeoutDuration(Duration.ofMinutes(1)).build())
+                        .circuitBreakerConfig(CircuitBreakerConfig.custom().minimumNumberOfCalls(Integer.MAX_VALUE).build()),
+                null);
+    }
+
+    protected void assertCircuitBreakerClosed(Throwable throwable) {
+        assertThat(throwable).isInstanceOf(NoFallbackAvailableException.class);
+    }
+
 }

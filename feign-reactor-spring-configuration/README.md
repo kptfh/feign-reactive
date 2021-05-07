@@ -92,7 +92,7 @@ In Spring Cloud  2.2.0 more generic abstraction vere introduced for cloud enviro
 So below are the differences with old `cloud` module.
 
 To configure you feign client as cloud ready (CircuitBreaker + LoadBalancer) you need to add 
-`feign-reactor-cloud2` module to your classpath and exclude `feign-reactor-cloud`.
+`feign-reactor-cloud` module to your classpath and exclude `feign-reactor-cloud`.
 
 This may be useful in case of tests:
 - set `reactive.feign.loadbalancer.enabled` to `false` to disable loadbalancer configuration for all clients 

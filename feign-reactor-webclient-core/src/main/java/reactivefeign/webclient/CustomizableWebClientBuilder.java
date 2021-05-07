@@ -2,21 +2,22 @@ package reactivefeign.webclient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.ResolvableType;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.codec.ClientCodecConfigurer;
+import org.springframework.http.codec.multipart.Part;
+import org.springframework.http.codec.multipart.PartHttpMessageWriter;
+import org.springframework.lang.Nullable;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilderFactory;
-import reactivefeign.ReactiveOptions;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 
@@ -46,8 +47,38 @@ public class CustomizableWebClientBuilder implements WebClient.Builder {
     private Consumer<ClientCodecConfigurer> consumer;
     private Consumer<ExchangeStrategies.Builder> exchangeStrategies;
 
+    private static final List<MediaType> MULTIPART_MEDIA_TYPES = Arrays.asList(
+    MediaType.MULTIPART_FORM_DATA, MediaType.MULTIPART_MIXED, MediaType.MULTIPART_RELATED);
+
     public CustomizableWebClientBuilder(WebClient.Builder builder) {
+        //PartHttpMessageWriter missed in default codecs
+        builder = addMultipartCodec(builder);
         this.builder = builder;
+    }
+
+    public WebClient.Builder addMultipartCodec(WebClient.Builder builder) {
+        builder = builder.codecs(clientCodecConfigurer -> clientCodecConfigurer.customCodecs().register(
+                //fix PartHttpMessageWriter
+                new PartHttpMessageWriter(){
+                    @Override
+                    public boolean canWrite(ResolvableType elementType, @Nullable MediaType mediaType) {
+                        return isMediaTypeCompatible(mediaType)
+                                && Part.class.isAssignableFrom(elementType.toClass());
+                    }
+
+                    public boolean isMediaTypeCompatible(@Nullable MediaType mediaType){
+                        if (mediaType == null) {
+                            return true;
+                        }
+                        for (MediaType supportedMediaType : MULTIPART_MEDIA_TYPES) {
+                            if (supportedMediaType.isCompatibleWith(mediaType)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                }));
+        return builder;
     }
 
     @Override

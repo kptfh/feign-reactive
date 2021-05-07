@@ -1,21 +1,28 @@
-package reactivefeign.cloud.common;
+package reactivefeign.cloud2;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import feign.RequestLine;
 import feign.RetryableException;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.springframework.cloud.client.DefaultServiceInstance;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.loadbalancer.reactive.ReactiveLoadBalancer;
+import org.springframework.cloud.loadbalancer.core.RoundRobinLoadBalancer;
+import org.springframework.cloud.loadbalancer.support.ServiceInstanceListSuppliers;
+import org.springframework.cloud.loadbalancer.support.SimpleObjectProvider;
 import reactivefeign.BaseReactorTest;
 import reactivefeign.ReactiveFeignBuilder;
+import reactivefeign.publisher.retry.OutOfRetriesException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -23,11 +30,12 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static reactivefeign.retry.BasicReactiveRetryPolicy.retry;
 
 /**
  * @author Sergii Karpenko
  */
-abstract public class AbstractLoadBalancingReactiveHttpClientTest extends BaseReactorTest {
+public class LoadBalancingReactiveHttpClientTest extends BaseReactorTest {
 
     public static final String MONO_URL = "/mono";
     public static final String FLUX_URL = "/flux";
@@ -42,10 +50,12 @@ abstract public class AbstractLoadBalancingReactiveHttpClientTest extends BaseRe
 
     protected static String serviceName = "LoadBalancingReactiveHttpClientTest-loadBalancingDefaultPolicyRoundRobin";
 
-    abstract protected <T> ReactiveFeignBuilder<T> cloudBuilderWithLoadBalancerEnabled();
+    private static ReactiveLoadBalancer.Factory<ServiceInstance> loadBalancerFactory;
 
-    abstract protected <T> ReactiveFeignBuilder<T> cloudBuilderWithLoadBalancerEnabled(
-            int retryOnSame, int retryOnNext);
+    @BeforeClass
+    public static void setupServersList() {
+        loadBalancerFactory = loadBalancerFactory(serviceName, server1.port(), server2.port());
+    }
 
     @Before
     public void resetServers() {
@@ -117,10 +127,6 @@ abstract public class AbstractLoadBalancingReactiveHttpClientTest extends BaseRe
             return isOutOfRetries(t);
         });
     }
-
-    abstract protected boolean isOutOfRetries(Throwable t);
-
-    abstract protected boolean isOutOutOfRetries(Throwable t);
 
     @Test
     public void shouldRetryOnSameAndNextAndFail() {
@@ -240,4 +246,55 @@ abstract public class AbstractLoadBalancingReactiveHttpClientTest extends BaseRe
         @RequestLine("GET "+FLUX_URL)
         Flux<Integer> getFlux();
     }
+
+    static ReactiveLoadBalancer.Factory<ServiceInstance> loadBalancerFactory(String serviceName, int... ports) {
+        return new ReactiveLoadBalancer.Factory<ServiceInstance>(){
+
+            @Override
+            public ReactiveLoadBalancer<ServiceInstance> getInstance(String serviceId) {
+                return new RoundRobinLoadBalancer(
+                        new SimpleObjectProvider<>(ServiceInstanceListSuppliers.from(serviceName,
+                                IntStream.of(ports).mapToObj(port ->
+                                        new DefaultServiceInstance("test1", serviceId, "localhost", port, false))
+                                        .toArray(ServiceInstance[]::new))),
+                        serviceName);
+            }
+
+            @Override
+            public <X> Map<String, X> getInstances(String name, Class<X> type) {
+                return new HashMap<>();
+            }
+
+            @Override
+            public <X> X getInstance(String name, Class<?> clazz, Class<?>... generics) {
+                return null;
+            }
+        };
+    }
+
+    protected <T> ReactiveFeignBuilder<T> cloudBuilderWithLoadBalancerEnabled() {
+        return BuilderUtils.<T>cloudBuilder()
+                .enableLoadBalancer(loadBalancerFactory);
+    }
+
+    protected <T> ReactiveFeignBuilder<T> cloudBuilderWithLoadBalancerEnabled(
+            int retryOnSame, int retryOnNext) {
+        return BuilderUtils.<T>cloudBuilder()
+                .enableLoadBalancer(loadBalancerFactory)
+                .retryOnSame(retry(retryOnSame))
+                .retryOnNext(retry(retryOnNext));
+    }
+
+    protected boolean isOutOfRetries(Throwable t) {
+        assertThat(t).isInstanceOf(OutOfRetriesException.class);
+        return true;
+    }
+
+    protected boolean isOutOutOfRetries(Throwable t) {
+        assertThat(t).isInstanceOf(OutOfRetriesException.class);
+        assertThat(t.getCause()).isInstanceOf(OutOfRetriesException.class);
+        assertThat(t.getCause().getCause()).isInstanceOf(RetryableException.class);
+        return true;
+    }
+
 }
