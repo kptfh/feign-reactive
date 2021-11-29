@@ -5,7 +5,7 @@
 
     <groupId>com.playtika.reactivefeign</groupId>
     <artifactId>feign-reactor</artifactId>
-    <version>3.1.2-SNAPSHOT</version>
+    <version>3.1.2</version>
     <packaging>pom</packaging>
 
     <modules>
