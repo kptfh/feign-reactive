@@ -65,7 +65,7 @@
         <commons-httpclient.version>3.1</commons-httpclient.version>
 
         <!--WebClient-->
-        <spring-webflux.version>5.0.9.RELEASE</spring-webflux.version>
+        <spring-webflux.version>5.3.18</spring-webflux.version>
         <spring-web.version>5.0.9.RELEASE</spring-web.version>
         <reactor-netty.version>0.7.9.RELEASE</reactor-netty.version>
         <netty-all.version>4.1.29.Final</netty-all.version>
