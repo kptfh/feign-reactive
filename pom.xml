@@ -66,7 +66,7 @@
 
         <!--WebClient-->
         <spring-webflux.version>5.0.9.RELEASE</spring-webflux.version>
-        <spring-web.version>5.0.9.RELEASE</spring-web.version>
+        <spring-web.version>6.0.0</spring-web.version>
         <reactor-netty.version>0.7.9.RELEASE</reactor-netty.version>
         <netty-all.version>4.1.29.Final</netty-all.version>
         <jackson.version>2.9.7</jackson.version>
