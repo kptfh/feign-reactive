@@ -14,6 +14,7 @@ package reactivefeign;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
+import feign.Headers;
 import feign.Param;
 import feign.QueryMap;
 import feign.RequestLine;
@@ -23,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.web.client.RestClientException;
+import reactivefeign.allfeatures.AllFeaturesApi;
 import reactivefeign.client.ReactiveHttpResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -75,8 +77,8 @@ abstract public class BasicFeaturesTest extends BaseReactorTest {
   public void setUp() {
     String targetUrl = getTargetUrl();
     client = this.<TestClient>builder()
-        .decode404()
-        .target(TestClient.class, targetUrl);
+            .decode404()
+            .target(TestClient.class, targetUrl);
   }
 
   public String getTargetUrl() {
@@ -108,7 +110,7 @@ abstract public class BasicFeaturesTest extends BaseReactorTest {
     Mono<TestObject> emptyMono = client.decode404ToEmptyMono(123);
 
     StepVerifier.create(emptyMono)
-        .verifyComplete();
+            .verifyComplete();
   }
 
   @Test
@@ -185,7 +187,7 @@ abstract public class BasicFeaturesTest extends BaseReactorTest {
             .target(Target.EmptyTarget.create(EmptyTargetClient.class));
 
     StepVerifier.create(testClient.expandUrl(new URI(getTargetUrl()), testObject)
-            .subscribeOn(testScheduler()))
+                    .subscribeOn(testScheduler()))
             .expectNext(testObject)
             .verifyComplete();
   }
@@ -199,7 +201,7 @@ abstract public class BasicFeaturesTest extends BaseReactorTest {
             .willReturn(aResponse().withStatus(200)));
 
     StepVerifier.create(client.queryMap(new HashMap<String, Object>(){{put(queryParameter, value);}})
-            .subscribeOn(testScheduler()))
+                    .subscribeOn(testScheduler()))
             .verifyComplete();
   }
 
@@ -214,7 +216,7 @@ abstract public class BasicFeaturesTest extends BaseReactorTest {
             .willReturn(aResponse().withStatus(200)));
 
     StepVerifier.create(client.queryParam(asList(value1, value2))
-            .subscribeOn(testScheduler()))
+                    .subscribeOn(testScheduler()))
             .verifyComplete();
   }
 
@@ -225,7 +227,21 @@ abstract public class BasicFeaturesTest extends BaseReactorTest {
             .willReturn(aResponse().withStatus(200)));
 
     StepVerifier.create(client.queryPojo(new TestObject(1))
-            .subscribeOn(testScheduler()))
+                    .subscribeOn(testScheduler()))
+            .verifyComplete();
+  }
+
+  @Test
+  public void shouldPassExplicitContentTypeHeader() {
+
+    String body = "123";
+    wireMockRule.stubFor(post(urlEqualTo("/passExplicitContentType"))
+            .withRequestBody(equalTo(body))
+            .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+            .willReturn(aResponse().withStatus(200)));
+
+    StepVerifier.create(client.passExplicitContentTypeHeader(body)
+                    .subscribeOn(testScheduler()))
             .verifyComplete();
   }
 
@@ -253,6 +269,10 @@ abstract public class BasicFeaturesTest extends BaseReactorTest {
 
     @RequestLine("POST /queryPojo")
     Mono<Void> queryPojo(@QueryMap TestObject queryPojo);
+
+    @Headers("Content-Type: application/x-www-form-urlencoded")
+    @RequestLine("POST /passExplicitContentType")
+    Mono<AllFeaturesApi.TestObject> passExplicitContentTypeHeader(String body);
   }
 
   public interface EmptyTargetClient {
