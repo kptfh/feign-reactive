@@ -71,7 +71,7 @@ abstract public class BaseReactorTest {
         }
     }
 
-    //by default we want to detect blocking calls
+    //by default, we want to detect blocking calls
     protected Scheduler testScheduler() {
         return Schedulers.parallel();
     }
